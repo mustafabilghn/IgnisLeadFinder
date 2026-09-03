@@ -56,10 +56,7 @@ export function LeadsExplorer() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-stone-900">Top Ignis Leads</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            {scopedToSearch ? "Results from your most recent search, " : "All leads collected so far, "}
-            ranked by Ignis Fit Score — highest first.
-          </p>
+          <p className="mt-1 text-sm text-stone-600">{describeResults(leads, scopedToSearch)}</p>
         </div>
         <div className="flex items-center gap-2">
           {scopedToSearch && (
@@ -93,4 +90,24 @@ export function LeadsExplorer() {
       {!loading && !error && leads && leads.length > 0 && <LeadTable leads={leads} />}
     </div>
   );
+}
+
+function describeResults(leads: LeadSummary[] | null, scopedToSearch: boolean): string {
+  const scope = scopedToSearch ? "from your most recent search" : "collected so far";
+  if (!leads || leads.length === 0) {
+    return `Ranked by Ignis Fit Score — highest first.`;
+  }
+  const real = leads.filter((l) => l.source === "google_places").length;
+  const mock = leads.length - real;
+
+  let sourceText: string;
+  if (mock === 0) {
+    sourceText = `Found ${real} real business${real === 1 ? "" : "es"} (Google Places)`;
+  } else if (real === 0) {
+    sourceText = `${mock} mock/demo lead${mock === 1 ? "" : "s"} (BUSINESS_PROVIDER=mock)`;
+  } else {
+    sourceText = `${leads.length} leads (${real} real, ${mock} mock/demo — from earlier test runs)`;
+  }
+
+  return `${sourceText} ${scope}, ranked by Ignis Fit Score — highest first.`;
 }

@@ -2,8 +2,8 @@ import type { Lead } from "./types";
 import { buildEvidencePayload, callClaude, languageFor } from "./aiClient";
 
 /** One short, research-oriented personalized outreach message. Never sales-y,
- * never fabricates facts or names. Falls back to a generic template without an API key. */
-export async function generateOutreachMessage(lead: Lead): Promise<{ text: string; aiGenerated: boolean }> {
+ * never fabricates facts or names. Requires ANTHROPIC_API_KEY. */
+export async function generateOutreachMessage(lead: Lead): Promise<string> {
   const evidence = buildEvidencePayload(lead);
   const lang = languageFor(lead);
 
@@ -21,25 +21,5 @@ company currently receives, checks, and processes customer/dealer orders. Requir
 - End with a soft ask for a few minutes of their time.
 Reply with ONLY the message text.`;
 
-  const result = await callClaude(prompt, 300);
-  if (result) return { text: result, aiGenerated: true };
-
-  return { text: templateMessage(evidence, lang), aiGenerated: false };
-}
-
-function templateMessage(evidence: ReturnType<typeof buildEvidencePayload>, lang: "tr" | "en"): string {
-  if (lang === "tr") {
-    return (
-      `[Şablon mesaj — ANTHROPIC_API_KEY tanımlı değil.] Merhaba, ${evidence.name} şirketinizin B2B/bayi tarafındaki ` +
-      `çalışma yapısı dikkatimi çekti. B2B sipariş süreçlerinin nasıl yürütüldüğü üzerine bir müşteri araştırması ` +
-      `yapıyorum. Özellikle siparişlerin alınması, kontrol edilmesi ve sisteme aktarılması sırasında şirketlerin hangi ` +
-      `işleri hâlâ manuel yaptığını anlamaya çalışıyorum. Bu konuda birkaç dakikalık görüşünüzü paylaşabilir misiniz?`
-    );
-  }
-  return (
-    `[Template message — ANTHROPIC_API_KEY not configured.] Hello, I noticed ${evidence.name}'s B2B/dealer-facing ` +
-    `setup and I'm researching how companies currently handle B2B order processes — specifically which steps in ` +
-    `receiving, checking, and entering customer/dealer orders are still manual. Would you be open to sharing a few ` +
-    `minutes on this?`
-  );
+  return callClaude(prompt, 300);
 }

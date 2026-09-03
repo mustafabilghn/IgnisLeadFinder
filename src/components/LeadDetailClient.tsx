@@ -9,11 +9,14 @@ import { EvidenceTable } from "@/components/EvidenceTable";
 import { StatusEditor } from "@/components/StatusEditor";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatusStates";
 
+const NOT_AVAILABLE = "Unknown / Not available";
+
 export function LeadDetailClient({ id }: { id: string }) {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rescanning, setRescanning] = useState(false);
+  const [anthropicConfigured, setAnthropicConfigured] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,6 +36,13 @@ export function LeadDetailClient({ id }: { id: string }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    fetch("/api/meta/status")
+      .then((r) => r.json())
+      .then((s) => setAnthropicConfigured(!!s.anthropicConfigured))
+      .catch(() => setAnthropicConfigured(false));
+  }, []);
 
   async function rescan() {
     setRescanning(true);
@@ -84,9 +94,9 @@ export function LeadDetailClient({ id }: { id: string }) {
             <EvidenceTable signals={lead.signals} />
           </Section>
 
-          <WhyThisLead lead={lead} onLead={setLead} />
-          <DiscoveryQuestions lead={lead} onLead={setLead} />
-          <OutreachMessage lead={lead} onLead={setLead} />
+          <WhyThisLead lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
+          <DiscoveryQuestions lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
+          <OutreachMessage lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
         </div>
 
         <div className="space-y-6">
@@ -94,8 +104,8 @@ export function LeadDetailClient({ id }: { id: string }) {
             <dl className="space-y-2 text-sm">
               <Row label="Name" value={lead.name} />
               <Row label="Category" value={lead.category} />
-              <Row label="Address" value={lead.address ?? "—"} />
-              <Row label="Phone" value={lead.phone ?? "—"} />
+              <Row label="Address" value={lead.address ?? NOT_AVAILABLE} />
+              <Row label="Phone" value={lead.phone ?? NOT_AVAILABLE} />
               <Row
                 label="Website"
                 value={
@@ -104,7 +114,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       {lead.website}
                     </a>
                   ) : (
-                    "—"
+                    NOT_AVAILABLE
                   )
                 }
               />
@@ -116,12 +126,15 @@ export function LeadDetailClient({ id }: { id: string }) {
                       Open in Maps
                     </a>
                   ) : (
-                    "—"
+                    NOT_AVAILABLE
                   )
                 }
               />
-              <Row label="Rating" value={lead.rating != null ? `★ ${lead.rating.toFixed(1)} (${lead.reviewCount ?? 0} reviews)` : "—"} />
-              <Row label="Source" value={lead.source === "mock" ? "Mock / demo data" : "Google Places"} />
+              <Row
+                label="Rating"
+                value={lead.rating != null ? `★ ${lead.rating.toFixed(1)} (${lead.reviewCount ?? 0} reviews)` : NOT_AVAILABLE}
+              />
+              <Row label="Source" value={lead.source === "mock" ? "Mock / demo data" : "Google Places (retrieved)"} />
             </dl>
           </Section>
 
@@ -137,9 +150,9 @@ export function LeadDetailClient({ id }: { id: string }) {
               <dl className="space-y-2 text-sm">
                 <Row label="Reachable" value={lead.websiteScan.reachable ? "Yes" : "No"} />
                 <Row label="HTTPS" value={lead.websiteScan.https ? "Yes" : "No"} />
-                <Row label="Page title" value={lead.websiteScan.title ?? "—"} />
+                <Row label="Page title" value={lead.websiteScan.title ?? NOT_AVAILABLE} />
                 <Row label="Pages checked" value={String(lead.websiteScan.pagesChecked.length)} />
-                <Row label="Last scanned" value={lead.lastScannedAt ? new Date(lead.lastScannedAt).toLocaleString() : "—"} />
+                <Row label="Last scanned" value={lead.lastScannedAt ? new Date(lead.lastScannedAt).toLocaleString() : NOT_AVAILABLE} />
                 {lead.websiteScan.mock && <Row label="Note" value="Mock website content (demo mode)" />}
                 {lead.websiteScan.error && <Row label="Error" value={<span className="text-red-700">{lead.websiteScan.error}</span>} />}
               </dl>
@@ -192,11 +205,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 // ── AI sections ────────────────────────────────────────────────────────
+// AI generation requires ANTHROPIC_API_KEY — there is no template/fake fallback.
+// aiConfigured === null means "still checking"; treated as not-yet-known (button enabled,
+// so a real click always gets the authoritative answer from the API either way).
 
 function useAiAction(leadId: string, path: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aiGenerated, setAiGenerated] = useState<boolean | null>(null);
 
   const run = useCallback(
     async (regenerate = false): Promise<unknown | null> => {
@@ -208,7 +223,6 @@ function useAiAction(leadId: string, path: string) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Generation failed.");
-        setAiGenerated(data.aiGenerated ?? true);
         return data;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Generation failed.");
@@ -220,11 +234,28 @@ function useAiAction(leadId: string, path: string) {
     [leadId, path],
   );
 
-  return { run, loading, error, aiGenerated };
+  return { run, loading, error };
 }
 
-function WhyThisLead({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => void }) {
-  const { run, loading, error, aiGenerated } = useAiAction(lead.id, "ai/summary");
+function AiUnavailableNote({ aiConfigured }: { aiConfigured: boolean | null }) {
+  if (aiConfigured !== false) return null;
+  return (
+    <p className="mb-2 text-xs font-medium text-red-700">
+      ✗ AI unavailable — add ANTHROPIC_API_KEY to the server environment to enable AI analysis.
+    </p>
+  );
+}
+
+function WhyThisLead({
+  lead,
+  onLead,
+  aiConfigured,
+}: {
+  lead: Lead;
+  onLead: (l: Lead) => void;
+  aiConfigured: boolean | null;
+}) {
+  const { run, loading, error } = useAiAction(lead.id, "ai/summary");
 
   async function generate(regenerate = false) {
     const data = (await run(regenerate)) as { summary: string } | null;
@@ -236,24 +267,37 @@ function WhyThisLead({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => void }
       title="Why This Lead?"
       subtitle="A short explanation grounded only in the evidence above."
       action={
-        <button type="button" onClick={() => generate(!!lead.aiSummary)} disabled={loading} className="btn-secondary text-xs">
+        <button
+          type="button"
+          onClick={() => generate(!!lead.aiSummary)}
+          disabled={loading || aiConfigured === false}
+          className="btn-secondary text-xs"
+        >
           {loading ? "Thinking…" : lead.aiSummary ? "Regenerate" : "Generate"}
         </button>
       }
     >
+      <AiUnavailableNote aiConfigured={aiConfigured} />
       {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
       {lead.aiSummary ? (
         <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700">{lead.aiSummary}</p>
       ) : (
         <p className="text-sm text-stone-400">Not generated yet.</p>
       )}
-      {aiGenerated === false && <p className="mt-2 text-xs text-amber-600">Template fallback — no ANTHROPIC_API_KEY configured.</p>}
     </Section>
   );
 }
 
-function DiscoveryQuestions({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => void }) {
-  const { run, loading, error, aiGenerated } = useAiAction(lead.id, "ai/questions");
+function DiscoveryQuestions({
+  lead,
+  onLead,
+  aiConfigured,
+}: {
+  lead: Lead;
+  onLead: (l: Lead) => void;
+  aiConfigured: boolean | null;
+}) {
+  const { run, loading, error } = useAiAction(lead.id, "ai/questions");
 
   async function generate(regenerate = false) {
     const data = (await run(regenerate)) as { questions: string[] } | null;
@@ -268,13 +312,14 @@ function DiscoveryQuestions({ lead, onLead }: { lead: Lead; onLead: (l: Lead) =>
         <button
           type="button"
           onClick={() => generate(!!lead.discoveryQuestions)}
-          disabled={loading}
+          disabled={loading || aiConfigured === false}
           className="btn-secondary text-xs"
         >
           {loading ? "Thinking…" : lead.discoveryQuestions ? "Regenerate" : "Generate"}
         </button>
       }
     >
+      <AiUnavailableNote aiConfigured={aiConfigured} />
       {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
       {lead.discoveryQuestions && lead.discoveryQuestions.length > 0 ? (
         <ol className="list-decimal space-y-2 pl-5 text-sm text-stone-700">
@@ -285,13 +330,20 @@ function DiscoveryQuestions({ lead, onLead }: { lead: Lead; onLead: (l: Lead) =>
       ) : (
         <p className="text-sm text-stone-400">Not generated yet.</p>
       )}
-      {aiGenerated === false && <p className="mt-2 text-xs text-amber-600">Template fallback — no ANTHROPIC_API_KEY configured.</p>}
     </Section>
   );
 }
 
-function OutreachMessage({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => void }) {
-  const { run, loading, error, aiGenerated } = useAiAction(lead.id, "ai/outreach");
+function OutreachMessage({
+  lead,
+  onLead,
+  aiConfigured,
+}: {
+  lead: Lead;
+  onLead: (l: Lead) => void;
+  aiConfigured: boolean | null;
+}) {
+  const { run, loading, error } = useAiAction(lead.id, "ai/outreach");
   const [copied, setCopied] = useState(false);
 
   async function generate(regenerate = false) {
@@ -318,13 +370,14 @@ function OutreachMessage({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => vo
         <button
           type="button"
           onClick={() => generate(!!lead.outreachMessage)}
-          disabled={loading}
+          disabled={loading || aiConfigured === false}
           className="btn-secondary text-xs"
         >
           {loading ? "Thinking…" : lead.outreachMessage ? "Regenerate" : "Generate"}
         </button>
       }
     >
+      <AiUnavailableNote aiConfigured={aiConfigured} />
       {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
       {lead.outreachMessage ? (
         <div className="space-y-2">
@@ -338,7 +391,6 @@ function OutreachMessage({ lead, onLead }: { lead: Lead; onLead: (l: Lead) => vo
       ) : (
         <p className="text-sm text-stone-400">Not generated yet.</p>
       )}
-      {aiGenerated === false && <p className="mt-2 text-xs text-amber-600">Template fallback — no ANTHROPIC_API_KEY configured.</p>}
     </Section>
   );
 }

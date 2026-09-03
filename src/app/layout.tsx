@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { getAppStatus } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Ignis Lead Finder",
@@ -8,9 +9,37 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const provider = (process.env.BUSINESS_PROVIDER || "mock").trim().toLowerCase();
-  const isMock = provider !== "google_places";
-  const aiEnabled = !!process.env.ANTHROPIC_API_KEY;
+  const status = getAppStatus();
+  const isMockMode = status.businessMode === "mock";
+
+  let businessBadge: { text: string; className: string; title: string };
+  if (isMockMode) {
+    businessBadge = {
+      text: "🧪 MOCK DATA MODE",
+      className: "bg-amber-100 text-amber-800",
+      title: "BUSINESS_PROVIDER=mock is set — business discovery is using clearly-labeled sample data, not real businesses.",
+    };
+  } else if (status.googleConfigured) {
+    businessBadge = {
+      text: "🟢 REAL DATA MODE",
+      className: "bg-emerald-100 text-emerald-800",
+      title: "Business discovery is using live Google Places data.",
+    };
+  } else {
+    businessBadge = {
+      text: "🔴 REAL DATA UNAVAILABLE",
+      className: "bg-red-100 text-red-800",
+      title: "GOOGLE_MAPS_API_KEY is not set — searches are blocked until it's configured.",
+    };
+  }
+
+  const aiBadge = status.anthropicConfigured
+    ? { text: "✓ AI ENABLED", className: "bg-sky-100 text-sky-800", title: "AI text generation (Anthropic) is enabled." }
+    : {
+        text: "✗ AI UNAVAILABLE",
+        className: "bg-red-100 text-red-800",
+        title: "ANTHROPIC_API_KEY is not set — AI generation is blocked, not faked.",
+      };
 
   return (
     <html lang="en">
@@ -29,20 +58,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 All Leads
               </Link>
               <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  isMock ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                }`}
-                title={isMock ? "Business discovery is using sample/mock data" : "Business discovery is using live Google Places data"}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${businessBadge.className}`}
+                title={businessBadge.title}
               >
-                {isMock ? "MOCK DATA MODE" : "LIVE: Google Places"}
+                {businessBadge.text}
               </span>
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  aiEnabled ? "bg-sky-100 text-sky-800" : "bg-stone-100 text-stone-600"
-                }`}
-                title={aiEnabled ? "AI text generation is enabled" : "No ANTHROPIC_API_KEY — AI text falls back to templates"}
-              >
-                {aiEnabled ? "AI ENABLED" : "AI: TEMPLATE FALLBACK"}
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${aiBadge.className}`} title={aiBadge.title}>
+                {aiBadge.text}
               </span>
             </nav>
           </div>

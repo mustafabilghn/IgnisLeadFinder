@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkApiAuth } from "@/lib/apiAuth";
 import { searchQuerySchema } from "@/lib/validation";
 import { runSearchPipeline } from "@/lib/searchPipeline";
+import { providerErrorResponse } from "@/lib/errors";
 
 export async function POST(req: Request) {
   const authError = checkApiAuth(req);
@@ -31,10 +32,6 @@ export async function POST(req: Request) {
       newLeadCount: result.newLeadCount,
     });
   } catch (err) {
-    console.error("Search pipeline failed:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Search failed unexpectedly. Please try again." },
-      { status: 502 },
-    );
+    return providerErrorResponse(err, "Search pipeline failed:");
   }
 }

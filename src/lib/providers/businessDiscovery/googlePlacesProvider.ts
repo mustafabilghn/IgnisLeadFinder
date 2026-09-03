@@ -1,5 +1,7 @@
 import type { DiscoveredBusiness, SearchQuery } from "@/lib/types";
 import type { BusinessDiscoveryProvider } from "./types";
+import { GOOGLE_NOT_CONFIGURED_MESSAGE } from "@/lib/config";
+import { NotConfiguredError } from "@/lib/errors";
 
 const SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
 const FIELD_MASK = [
@@ -20,18 +22,17 @@ const MAX_PAGES = 3; // cost control — caps a single search at 60 places
 
 /**
  * Real provider backed by Google's Places API (New) — Text Search.
- * Requires GOOGLE_PLACES_API_KEY. Throws a clear error if the key is missing
- * so the caller can surface it instead of silently returning nothing.
+ * Requires GOOGLE_MAPS_API_KEY. Throws NotConfiguredError (never a silent
+ * fallback) when the key is missing, so the caller blocks the search with a
+ * clear message instead of returning nothing or substituting fake data.
  */
 export class GooglePlacesProvider implements BusinessDiscoveryProvider {
   readonly source = "google_places" as const;
 
   async discover(query: SearchQuery): Promise<DiscoveredBusiness[]> {
-    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
-      throw new Error(
-        "GOOGLE_PLACES_API_KEY is not set. Add it to .env.local or switch BUSINESS_PROVIDER=mock.",
-      );
+      throw new NotConfiguredError(GOOGLE_NOT_CONFIGURED_MESSAGE);
     }
 
     const textQuery = [query.category, query.district, query.city, query.country]

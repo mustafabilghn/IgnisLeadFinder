@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkApiAuth } from "@/lib/apiAuth";
 import { getLead, saveDiscoveryQuestions } from "@/lib/leadRepository";
 import { generateDiscoveryQuestions } from "@/lib/aiLeadAnalyzer";
+import { providerErrorResponse } from "@/lib/errors";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const authError = checkApiAuth(req);
@@ -19,14 +20,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    const { questions, aiGenerated } = await generateDiscoveryQuestions(lead);
+    const questions = await generateDiscoveryQuestions(lead);
     saveDiscoveryQuestions(id, questions);
-    return NextResponse.json({ questions, cached: false, aiGenerated });
+    return NextResponse.json({ questions, cached: false });
   } catch (err) {
-    console.error("Discovery question generation failed:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to generate discovery questions." },
-      { status: 502 },
-    );
+    return providerErrorResponse(err, "Discovery question generation failed:");
   }
 }

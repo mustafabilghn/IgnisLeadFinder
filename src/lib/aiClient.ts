@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Lead } from "./types";
+import { ANTHROPIC_NOT_CONFIGURED_MESSAGE } from "./config";
+import { NotConfiguredError } from "./errors";
 
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
 
-export function getAnthropicClient(): Anthropic | null {
+function getAnthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) throw new NotConfiguredError(ANTHROPIC_NOT_CONFIGURED_MESSAGE);
   return new Anthropic({ apiKey });
 }
 
@@ -19,6 +21,8 @@ public Google listing and website. Follow these rules strictly:
 - Do not invent facts. Only use what is in the evidence provided.
 - Do not invent owner names, employee names, or any personal names.
 - Do not claim that manual research, phone calls, visits, or human review were performed. You only saw the structured evidence given to you.
+- Do not assume that a WhatsApp icon or link means orders are actually taken via WhatsApp — only claim that if a signal explicitly verifies it.
+- Do not claim manual order entry exists unless the evidence actually supports it — otherwise call it unknown.
 - Clearly distinguish confirmed/verified evidence from inference or unknowns. Use hedged language ("appears to", "publicly indicates") for anything not explicitly VERIFIED.
 - Never state or imply order volume, transaction counts, revenue, or headcount — these are never observed.
 - If the evidence is thin, say so plainly instead of padding with generic filler.
@@ -60,9 +64,9 @@ export function languageFor(lead: Lead): "tr" | "en" {
   return (lead.country || "").toLowerCase().includes("turk") ? "tr" : "en";
 }
 
-export async function callClaude(userPrompt: string, maxTokens: number): Promise<string | null> {
+/** Throws NotConfiguredError if ANTHROPIC_API_KEY is unset — callers must not catch that into a fake response. */
+export async function callClaude(userPrompt: string, maxTokens: number): Promise<string> {
   const client = getAnthropicClient();
-  if (!client) return null;
 
   const response = await client.messages.create({
     model: AI_MODEL,
@@ -72,5 +76,9 @@ export async function callClaude(userPrompt: string, maxTokens: number): Promise
   });
 
   const textBlock = response.content.find((block) => block.type === "text");
-  return textBlock && "text" in textBlock ? textBlock.text.trim() : null;
+  const text = textBlock && "text" in textBlock ? textBlock.text.trim() : "";
+  if (!text) {
+    throw new Error("Anthropic returned an empty response.");
+  }
+  return text;
 }

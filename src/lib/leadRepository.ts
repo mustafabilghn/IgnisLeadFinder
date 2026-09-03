@@ -363,6 +363,7 @@ function rowToLead(row: LeadRow): Lead {
 function rowToSummary(row: LeadRow): LeadSummary {
   return {
     id: row.id,
+    source: row.source,
     name: row.name,
     category: row.category,
     district: row.district,

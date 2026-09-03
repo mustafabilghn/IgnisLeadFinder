@@ -120,6 +120,7 @@ export interface Lead {
 /** Lightweight projection used for the ranked list / table view */
 export interface LeadSummary {
   id: string;
+  source: BusinessSource;
   name: string;
   category: string;
   district: string | null;

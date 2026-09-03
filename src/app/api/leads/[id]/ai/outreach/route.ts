@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkApiAuth } from "@/lib/apiAuth";
 import { getLead, saveOutreachMessage } from "@/lib/leadRepository";
 import { generateOutreachMessage } from "@/lib/outreachGenerator";
+import { providerErrorResponse } from "@/lib/errors";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const authError = checkApiAuth(req);
@@ -19,14 +20,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    const { text, aiGenerated } = await generateOutreachMessage(lead);
+    const text = await generateOutreachMessage(lead);
     saveOutreachMessage(id, text);
-    return NextResponse.json({ message: text, cached: false, aiGenerated });
+    return NextResponse.json({ message: text, cached: false });
   } catch (err) {
-    console.error("Outreach generation failed:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to generate outreach message." },
-      { status: 502 },
-    );
+    return providerErrorResponse(err, "Outreach generation failed:");
   }
 }

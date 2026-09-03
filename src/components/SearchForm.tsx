@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import type { AppStatus } from "@/lib/config";
+import { GOOGLE_NOT_CONFIGURED_MESSAGE } from "@/lib/config";
 
 const PRESETS = [
   { label: "Beylikdüzü · Aluminum/PVC/Glass", country: "Turkey", city: "Istanbul", district: "Beylikdüzü", category: "Aluminum / PVC / Glass" },
@@ -9,7 +11,7 @@ const PRESETS = [
   { label: "Esenyurt · Metal Manufacturer", country: "Turkey", city: "Istanbul", district: "Esenyurt", category: "Metal Manufacturer" },
 ];
 
-export function SearchForm() {
+export function SearchForm({ status }: { status: AppStatus }) {
   const router = useRouter();
   const [country, setCountry] = useState("Turkey");
   const [city, setCity] = useState("Istanbul");
@@ -18,6 +20,8 @@ export function SearchForm() {
   const [maxResults, setMaxResults] = useState(15);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const searchBlocked = status.businessMode === "google_places" && !status.googleConfigured;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -42,7 +46,7 @@ export function SearchForm() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <h1 className="text-2xl font-semibold text-stone-900">Who should I contact first for Ignis?</h1>
       <p className="mt-2 text-sm text-stone-600">
         Discover real businesses in an area/industry, analyze their public footprint for Ignis-relevant
@@ -68,6 +72,13 @@ export function SearchForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+        {searchBlocked && (
+          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <p className="font-semibold">🔴 Real data unavailable</p>
+            <p className="mt-1">{GOOGLE_NOT_CONFIGURED_MESSAGE}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <Field label="Country">
             <input
@@ -123,10 +134,15 @@ export function SearchForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || searchBlocked}
+          title={searchBlocked ? GOOGLE_NOT_CONFIGURED_MESSAGE : undefined}
           className="w-full rounded-lg bg-ignis-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-ignis-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Finding leads — discovering, scanning websites, scoring…" : "Find Leads"}
+          {loading
+            ? "Finding leads — discovering, scanning websites, scoring…"
+            : searchBlocked
+              ? "Find Leads (blocked — see above)"
+              : "Find Leads"}
         </button>
       </form>
     </div>
