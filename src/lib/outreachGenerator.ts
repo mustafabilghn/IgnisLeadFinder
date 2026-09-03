@@ -1,8 +1,8 @@
 import type { Lead } from "./types";
-import { buildEvidencePayload, callClaude, languageFor } from "./aiClient";
+import { buildEvidencePayload, callAiModel, languageFor } from "./aiClient";
 
 /** One short, research-oriented personalized outreach message. Never sales-y,
- * never fabricates facts or names. Requires ANTHROPIC_API_KEY. */
+ * never fabricates facts or names. Requires GROQ_API_KEY. */
 export async function generateOutreachMessage(lead: Lead): Promise<string> {
   const evidence = buildEvidencePayload(lead);
   const lang = languageFor(lead);
@@ -21,5 +21,5 @@ company currently receives, checks, and processes customer/dealer orders. Requir
 - End with a soft ask for a few minutes of their time.
 Reply with ONLY the message text.`;
 
-  return callClaude(prompt, 300);
+  return callAiModel(prompt, 300);
 }

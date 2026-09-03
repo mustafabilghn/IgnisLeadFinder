@@ -10,14 +10,14 @@ export function DiagnosticsPanel({ status }: { status: AppStatus }) {
       note: status.businessMode === "mock" ? "Skipped — BUSINESS_PROVIDER=mock is active" : undefined,
     },
     {
-      label: "Anthropic API",
-      ok: status.anthropicConfigured,
+      label: "Groq AI",
+      ok: status.groqConfigured,
       okText: "Configured",
-      badText: "Missing ANTHROPIC_API_KEY",
+      badText: "Missing GROQ_API_KEY",
     },
   ];
 
-  const allGood = status.realDataActive && status.anthropicConfigured;
+  const allGood = status.realDataActive && status.groqConfigured;
 
   return (
     <div className="card">

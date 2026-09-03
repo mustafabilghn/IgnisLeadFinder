@@ -1,8 +1,8 @@
 import type { Lead } from "./types";
-import { buildEvidencePayload, callClaude, languageFor } from "./aiClient";
+import { buildEvidencePayload, callAiModel, languageFor } from "./aiClient";
 
-/** "Why This Lead?" — a short grounded explanation. Requires ANTHROPIC_API_KEY;
- * callClaude throws NotConfiguredError otherwise (no fake/template text). */
+/** "Why This Lead?" — a short grounded explanation. Requires GROQ_API_KEY;
+ * callAiModel throws NotConfiguredError otherwise (no fake/template text). */
 export async function generateLeadSummary(lead: Lead): Promise<string> {
   const evidence = buildEvidencePayload(lead);
   const lang = languageFor(lead);
@@ -15,7 +15,7 @@ why "${evidence.name}" may or may not be worth contacting for the customer-disco
 above. Ground every claim in the evidence JSON above. End with one sentence naming what is still unknown
 and should be verified directly in conversation. Do not use a greeting or sign-off — just the paragraph.`;
 
-  return callClaude(prompt, 400);
+  return callAiModel(prompt, 400);
 }
 
 /** 3 customer-discovery questions grounded in what's still unknown about this lead. */
@@ -33,10 +33,10 @@ currently receive, check, and process customer/dealer orders — not selling any
 probe the specific unknowns listed in the evidence (e.g. ERP usage, manual order entry) rather than generic
 ones. Reply with ONLY the 3 questions, one per line, numbered "1.", "2.", "3." — no other text.`;
 
-  const result = await callClaude(prompt, 300);
+  const result = await callAiModel(prompt, 300);
   const questions = parseNumberedList(result);
   if (questions.length === 0) {
-    throw new Error("Anthropic returned a response that couldn't be parsed into discovery questions.");
+    throw new Error("Groq returned a response that couldn't be parsed into discovery questions.");
   }
   return questions;
 }

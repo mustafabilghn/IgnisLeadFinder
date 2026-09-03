@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 /**
- * Thrown when a real external provider (Google Places, Anthropic) is selected
+ * Thrown when a real external provider (Google Places, Groq) is selected
  * but its required credential isn't set. Route handlers catch this specifically
  * to return 503 with the exact configuration instructions — never a silent
  * fallback to fake data.

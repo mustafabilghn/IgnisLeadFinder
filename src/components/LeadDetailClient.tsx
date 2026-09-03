@@ -16,7 +16,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rescanning, setRescanning] = useState(false);
-  const [anthropicConfigured, setAnthropicConfigured] = useState<boolean | null>(null);
+  const [groqConfigured, setGroqConfigured] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,8 +40,8 @@ export function LeadDetailClient({ id }: { id: string }) {
   useEffect(() => {
     fetch("/api/meta/status")
       .then((r) => r.json())
-      .then((s) => setAnthropicConfigured(!!s.anthropicConfigured))
-      .catch(() => setAnthropicConfigured(false));
+      .then((s) => setGroqConfigured(!!s.groqConfigured))
+      .catch(() => setGroqConfigured(false));
   }, []);
 
   async function rescan() {
@@ -94,9 +94,9 @@ export function LeadDetailClient({ id }: { id: string }) {
             <EvidenceTable signals={lead.signals} />
           </Section>
 
-          <WhyThisLead lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
-          <DiscoveryQuestions lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
-          <OutreachMessage lead={lead} onLead={setLead} aiConfigured={anthropicConfigured} />
+          <WhyThisLead lead={lead} onLead={setLead} aiConfigured={groqConfigured} />
+          <DiscoveryQuestions lead={lead} onLead={setLead} aiConfigured={groqConfigured} />
+          <OutreachMessage lead={lead} onLead={setLead} aiConfigured={groqConfigured} />
         </div>
 
         <div className="space-y-6">
@@ -205,7 +205,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 // ── AI sections ────────────────────────────────────────────────────────
-// AI generation requires ANTHROPIC_API_KEY — there is no template/fake fallback.
+// AI generation requires GROQ_API_KEY — there is no template/fake fallback.
 // aiConfigured === null means "still checking"; treated as not-yet-known (button enabled,
 // so a real click always gets the authoritative answer from the API either way).
 
@@ -241,7 +241,7 @@ function AiUnavailableNote({ aiConfigured }: { aiConfigured: boolean | null }) {
   if (aiConfigured !== false) return null;
   return (
     <p className="mb-2 text-xs font-medium text-red-700">
-      ✗ AI unavailable — add ANTHROPIC_API_KEY to the server environment to enable AI analysis.
+      ✗ AI unavailable — add GROQ_API_KEY to the server environment to enable AI analysis.
     </p>
   );
 }

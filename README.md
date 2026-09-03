@@ -6,7 +6,7 @@ It discovers real businesses in a location/industry, does a lightweight scan of 
 
 ## Real data only — no silent fallback
 
-**Normal use requires real credentials.** There is no "works out of the box with fake data" mode. If `GOOGLE_MAPS_API_KEY` isn't set, the app does not invent businesses — the Search button is disabled and shows exactly why. If `ANTHROPIC_API_KEY` isn't set, the "Generate" buttons on a lead's detail page are disabled the same way. Nothing ever silently substitutes mock businesses, fake ratings/reviews, or template AI text for the real thing — every failure is a visible, actionable error.
+**Normal use requires real credentials.** There is no "works out of the box with fake data" mode. If `GOOGLE_MAPS_API_KEY` isn't set, the app does not invent businesses — the Search button is disabled and shows exactly why. If `GROQ_API_KEY` isn't set, the "Generate" buttons on a lead's detail page are disabled the same way. Nothing ever silently substitutes mock businesses, fake ratings/reviews, or template AI text for the real thing — every failure is a visible, actionable error.
 
 The header always shows the true state: **🟢 REAL DATA MODE** / **🔴 REAL DATA UNAVAILABLE** for business discovery, **✓ AI ENABLED** / **✗ AI UNAVAILABLE** for AI generation. The search page also has a small **System Status** panel with the same two checks.
 
@@ -15,7 +15,7 @@ The header always shows the true state: **🟢 REAL DATA MODE** / **🔴 REAL DA
 ```bash
 npm install
 cp .env.example .env.local
-# edit .env.local: add GOOGLE_MAPS_API_KEY and ANTHROPIC_API_KEY
+# edit .env.local: add GOOGLE_MAPS_API_KEY and GROQ_API_KEY
 npm run dev
 ```
 
@@ -24,8 +24,8 @@ Open http://localhost:3000.
 | Variable | Required for | Where to get it |
 |---|---|---|
 | `GOOGLE_MAPS_API_KEY` | Business discovery (Google Places API, New) | Google Cloud Console → enable "Places API (New)" → create an API key |
-| `ANTHROPIC_API_KEY` | AI lead summary / discovery questions / outreach message | console.anthropic.com |
-| `ANTHROPIC_MODEL` (optional) | — | Defaults to `claude-haiku-4-5-20251001` (cheap, sufficient for grounded summarization) |
+| `GROQ_API_KEY` | AI lead summary / discovery questions / outreach message | console.groq.com |
+| `GROQ_MODEL` (optional) | — | Defaults to `openai/gpt-oss-120b` (production, reasoning-capable, general-purpose) |
 | `APP_ACCESS_TOKEN` (optional) | Basic API protection beyond localhost | Any secret string you choose; required as an `x-ignis-token` header on mutating routes when set |
 
 Nothing here is ever sent to the browser — all provider calls happen server-side (Next.js Route Handlers). Restart `npm run dev` after editing `.env.local`.
@@ -44,11 +44,11 @@ With `GOOGLE_MAPS_API_KEY` set, this returns actual aluminum manufacturers in Be
 
 ### Developer/test mode (mock data)
 
-For UI development without burning API calls, set `BUSINESS_PROVIDER=mock` in `.env.local`. This is an explicit, isolated opt-in — never the default, never silent. The header switches to **🧪 MOCK DATA MODE**, and every mock business is clearly a sample (fake ratings included) meant only for exercising the discovery → scan → score → rank pipeline offline. AI generation still requires a real `ANTHROPIC_API_KEY` even in mock mode — there is no fake-AI mode for text generation, ever.
+For UI development without burning API calls, set `BUSINESS_PROVIDER=mock` in `.env.local`. This is an explicit, isolated opt-in — never the default, never silent. The header switches to **🧪 MOCK DATA MODE**, and every mock business is clearly a sample (fake ratings included) meant only for exercising the discovery → scan → score → rank pipeline offline. AI generation still requires a real `GROQ_API_KEY` even in mock mode — there is no fake-AI mode for text generation, ever.
 
 ## How scoring works
 
-`src/lib/scoringEngine.ts` is a plain, auditable rules table — **no LLM involved** in the score itself. Each of the 5 weighted categories (B2B fit, order complexity, operational complexity, channel complexity, automation opportunity) sums points for specific VERIFIED/INFERRED signals, capped at its max, summing to exactly 100. AI is only used afterward, to turn the already-computed evidence into a short grounded explanation, discovery questions, and an outreach message — and only when `ANTHROPIC_API_KEY` is set; the system prompt (`src/lib/aiClient.ts`) explicitly forbids inventing facts, names, assuming a WhatsApp icon means WhatsApp orders, or claiming manual research was done.
+`src/lib/scoringEngine.ts` is a plain, auditable rules table — **no LLM involved** in the score itself. Each of the 5 weighted categories (B2B fit, order complexity, operational complexity, channel complexity, automation opportunity) sums points for specific VERIFIED/INFERRED signals, capped at its max, summing to exactly 100. AI (Groq) is only used afterward, to turn the already-computed evidence into a short grounded explanation, discovery questions, and an outreach message — and only when `GROQ_API_KEY` is set; the system prompt (`src/lib/aiClient.ts`) explicitly forbids inventing facts, people, or company characteristics, assuming a WhatsApp icon means WhatsApp orders, or claiming manual research was done.
 
 Every signal in `src/lib/signalDefinitions.ts` is either:
 - **VERIFIED** — an exact phrase (English + Turkish) found on a scanned page, with the source URL and a quoted snippet
@@ -60,12 +60,13 @@ Every signal in `src/lib/signalDefinitions.ts` is either:
 ```
 src/
   lib/
-    config.ts                      isGoogleConfigured / isAnthropicConfigured — single source of truth for real-vs-blocked state
+    config.ts                      isGoogleConfigured / isGroqConfigured — single source of truth for real-vs-blocked state
     errors.ts                      NotConfiguredError + shared 503-vs-502 route error mapping
     providers/businessDiscovery/   BusinessDiscoveryProvider interface + mock & Google Places implementations
     websiteAnalyzer.ts             Fetches homepage + a couple of relevant sub-pages (dealer/about/contact), bounded & timeboxed
     signalExtractor.ts             Raw text -> evidence log (SignalEvidence[])
     scoringEngine.ts               Evidence -> deterministic Ignis Fit Score
+    aiClient.ts                    Sole entry point into Groq — callAiModel(); only file that imports groq-sdk
     aiLeadAnalyzer.ts               "Why this lead" + discovery questions (grounded LLM calls — throws if not configured)
     outreachGenerator.ts           Personalized outreach message (same grounding rules)
     leadRepository.ts              SQLite (node:sqlite) persistence + filtering

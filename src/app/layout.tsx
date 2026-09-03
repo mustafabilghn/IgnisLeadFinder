@@ -33,12 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     };
   }
 
-  const aiBadge = status.anthropicConfigured
-    ? { text: "✓ AI ENABLED", className: "bg-sky-100 text-sky-800", title: "AI text generation (Anthropic) is enabled." }
+  const aiBadge = status.groqConfigured
+    ? { text: "✓ AI ENABLED", className: "bg-sky-100 text-sky-800", title: "AI text generation (Groq) is enabled." }
     : {
         text: "✗ AI UNAVAILABLE",
         className: "bg-red-100 text-red-800",
-        title: "ANTHROPIC_API_KEY is not set — AI generation is blocked, not faked.",
+        title: "GROQ_API_KEY is not set — AI generation is blocked, not faked.",
       };
 
   return (
