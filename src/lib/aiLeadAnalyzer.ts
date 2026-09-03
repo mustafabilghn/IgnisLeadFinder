@@ -15,7 +15,7 @@ why "${evidence.name}" may or may not be worth contacting for the customer-disco
 above. Ground every claim in the evidence JSON above. End with one sentence naming what is still unknown
 and should be verified directly in conversation. Do not use a greeting or sign-off — just the paragraph.`;
 
-  return callAiModel(prompt, 400);
+  return callAiModel(prompt, 600);
 }
 
 /** 3 customer-discovery questions grounded in what's still unknown about this lead. */

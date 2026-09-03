@@ -1,5 +1,5 @@
 import type { SignalEvidence } from "./types";
-import { SIGNAL_DEFINITIONS } from "./signalDefinitions";
+import { SIGNAL_DEFINITIONS, type SignalDefinition } from "./signalDefinitions";
 
 const SNIPPET_RADIUS = 60;
 
@@ -22,7 +22,10 @@ export function extractSignals(
     : "No website on file";
 
   for (const def of SIGNAL_DEFINITIONS) {
-    const hit = pages.length > 0 ? findFirstMatch(pages, def.phrases) : null;
+    let hit = pages.length > 0 ? findFirstMatch(pages, def.phrases) : null;
+    if (!hit && def.proximity && pages.length > 0) {
+      hit = findProximityMatch(pages, def.proximity);
+    }
 
     if (hit) {
       verifiedKeys.add(def.key);
@@ -108,6 +111,40 @@ export function extractSignals(
   });
 
   return evidence;
+}
+
+/**
+ * Fallback for `def.proximity`: matches when `anchor` appears within
+ * `radius` characters of any `contextWords` entry, even though no single
+ * fixed phrase matched. See SignalDefinition.proximity for why this exists.
+ */
+function findProximityMatch(
+  pages: { url: string; text: string }[],
+  proximity: NonNullable<SignalDefinition["proximity"]>,
+): { url: string; snippet: string } | null {
+  const { anchor, contextWords, radius } = proximity;
+
+  for (const page of pages) {
+    const haystack = page.text.toLowerCase();
+    let searchFrom = 0;
+    let anchorIdx: number;
+    while ((anchorIdx = haystack.indexOf(anchor, searchFrom)) !== -1) {
+      const windowStart = Math.max(0, anchorIdx - radius);
+      const windowEnd = Math.min(haystack.length, anchorIdx + anchor.length + radius);
+      const window = haystack.slice(windowStart, windowEnd);
+
+      if (contextWords.some((w) => window.includes(w))) {
+        const start = Math.max(0, anchorIdx - SNIPPET_RADIUS);
+        const end = Math.min(page.text.length, anchorIdx + anchor.length + SNIPPET_RADIUS);
+        const snippet = `${start > 0 ? "…" : ""}${page.text.slice(start, end).trim()}${
+          end < page.text.length ? "…" : ""
+        }`;
+        return { url: page.url, snippet };
+      }
+      searchFrom = anchorIdx + anchor.length;
+    }
+  }
+  return null;
 }
 
 function findFirstMatch(

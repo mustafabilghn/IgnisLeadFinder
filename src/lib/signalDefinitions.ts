@@ -12,6 +12,17 @@ export interface SignalDefinition {
   phrases: string[];
   /** Shown in the UI / evidence log to explain what a VERIFIED hit means */
   description: string;
+  /**
+   * Optional fallback for when the exact phrase list misses a real-world
+   * variant a fixed string can't enumerate — e.g. Turkish possessive/verb
+   * suffixes ("bayimiz OLUN" vs "bayimizIN olun") or a near-synonym used in
+   * place of the expected word ("whatsapp İLETİŞİM" for wholesale orders
+   * instead of "whatsapp SİPARİŞ"). Matches when `anchor` appears within
+   * `radius` characters of any `contextWords` entry. Deliberately narrow:
+   * only added where real (non-mock) website text was found to genuinely
+   * contain the signal but miss every literal phrase above.
+   */
+  proximity?: { anchor: string; contextWords: string[]; radius: number };
 }
 
 export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
@@ -57,6 +68,9 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "bayimiz olun",
       "bayilik için başvurun",
     ],
+    // Real example: "Bayimizin Olun" (a common e-commerce marketing-badge
+    // variant with a possessive suffix) doesn't match "bayimiz olun" above.
+    proximity: { anchor: "bayi", contextWords: ["olun", "katılın", "katilin"], radius: 20 },
     description: "The site actively recruits new dealers.",
   },
   {
@@ -163,6 +177,16 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "whatsapp destek hattı",
       "whatsapp sipariş hattı",
     ],
+    // Real example: "Toptan Alımlar İçin Whatsapp İletişim" (WhatsApp contact
+    // for wholesale purchases) is a genuine ordering channel but says
+    // "İletişim" (contact), not "Sipariş" (order) — no fixed phrase above
+    // can enumerate every such near-synonym, so also match by proximity to
+    // any purchase/order-context word.
+    proximity: {
+      anchor: "whatsapp",
+      contextWords: ["sipariş", "siparis", "alım", "alim", "satış", "satis", "toptan", "teklif", "order", "purchase"],
+      radius: 50,
+    },
     description: "The site explicitly states orders are accepted via WhatsApp.",
   },
   {
