@@ -11,10 +11,10 @@ export function EvidenceTable({ signals }: { signals: SignalEvidence[] }) {
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-stone-200 text-xs uppercase tracking-wide text-stone-500">
-            <th className="py-2 pr-4 font-medium">Signal</th>
-            <th className="py-2 pr-4 font-medium">Status</th>
-            <th className="py-2 pr-4 font-medium">Value</th>
-            <th className="py-2 font-medium">Source / evidence</th>
+            <th className="py-2 pr-4 font-medium">Sinyal</th>
+            <th className="py-2 pr-4 font-medium">Durum</th>
+            <th className="py-2 pr-4 font-medium">Değer</th>
+            <th className="py-2 font-medium">Kaynak / kanıt</th>
           </tr>
         </thead>
         <tbody>

@@ -24,6 +24,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ leads });
   } catch (err) {
     console.error("Failed to list leads:", err);
-    return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
+    return NextResponse.json({ error: "Firmalar yüklenemedi." }, { status: 500 });
   }
 }

@@ -8,5 +8,5 @@ export function checkApiAuth(req: Request): NextResponse | null {
   const provided = req.headers.get("x-ignis-token");
   if (provided === token) return null;
 
-  return NextResponse.json({ error: "Unauthorized — missing or invalid x-ignis-token header." }, { status: 401 });
+  return NextResponse.json({ error: "Yetkisiz — x-ignis-token başlığı eksik veya geçersiz." }, { status: 401 });
 }

@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   try {
     const lead = await rescanLead(id);
-    if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    if (!lead) return NextResponse.json({ error: "Firma bulunamadı" }, { status: 404 });
     return NextResponse.json({ lead });
   } catch (err) {
     console.error("Rescan failed:", err);

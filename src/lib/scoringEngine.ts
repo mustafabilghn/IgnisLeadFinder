@@ -5,6 +5,10 @@ import type { Priority, ScoreBreakdown, ScoreCategoryBreakdown, SignalEvidence }
 // Some signals (e.g. dealer_network) legitimately contribute to more than one
 // category, mirroring how the spec itself lists that signal under both
 // "B2B fit" and "Operational complexity".
+//
+// Only the display label strings below are in Turkish (UI text) — signal
+// keys, point values, and category maxes are unchanged from the original
+// scoring design.
 
 interface Rule {
   signalKey: string;
@@ -13,50 +17,50 @@ interface Rule {
 }
 
 const B2B_RULES: Rule[] = [
-  { signalKey: "b2b_explicit", points: 6, label: "B2B explicitly stated" },
-  { signalKey: "wholesale", points: 4, label: "Wholesale selling" },
-  { signalKey: "distributor", points: 4, label: "Distributor" },
-  { signalKey: "dealer_network", points: 4, label: "Dealer network" },
-  { signalKey: "corporate_customers", points: 2, label: "Corporate customer focus" },
+  { signalKey: "b2b_explicit", points: 6, label: "B2B açıkça belirtilmiş" },
+  { signalKey: "wholesale", points: 4, label: "Toptan satış" },
+  { signalKey: "distributor", points: 4, label: "Distribütör" },
+  { signalKey: "dealer_network", points: 4, label: "Bayi ağı" },
+  { signalKey: "corporate_customers", points: 2, label: "Kurumsal müşteri odağı" },
 ];
 const B2B_MAX = 20;
 
 const ORDER_COMPLEXITY_RULES: Rule[] = [
-  { signalKey: "technical_specs", points: 6, label: "Technical specifications published" },
-  { signalKey: "custom_production", points: 6, label: "Custom-sized / custom production" },
-  { signalKey: "configurable_products", points: 5, label: "Configurable products" },
-  { signalKey: "project_based", points: 5, label: "Project-based work" },
-  { signalKey: "large_catalog_hint", points: 3, label: "Product catalog published" },
+  { signalKey: "technical_specs", points: 6, label: "Teknik özellikler yayınlanmış" },
+  { signalKey: "custom_production", points: 6, label: "Özel ölçü / özel üretim" },
+  { signalKey: "configurable_products", points: 5, label: "Konfigüre edilebilir ürünler" },
+  { signalKey: "project_based", points: 5, label: "Proje bazlı çalışma" },
+  { signalKey: "large_catalog_hint", points: 3, label: "Ürün kataloğu yayınlanmış" },
 ];
 const ORDER_COMPLEXITY_MAX = 25;
 
 const OPERATIONAL_RULES: Rule[] = [
-  { signalKey: "dealer_network", points: 5, label: "Dealer network (operational reach)" },
-  { signalKey: "multiple_locations", points: 4, label: "Multiple locations" },
-  { signalKey: "sales_support", points: 3, label: "Dedicated sales support" },
-  { signalKey: "production_coordination", points: 3, label: "Production coordination" },
-  { signalKey: "quotation_process", points: 3, label: "Formal quotation process" },
-  { signalKey: "large_catalog_hint", points: 2, label: "Product catalog (operational breadth)" },
+  { signalKey: "dealer_network", points: 5, label: "Bayi ağı (operasyonel kapsam)" },
+  { signalKey: "multiple_locations", points: 4, label: "Birden fazla lokasyon" },
+  { signalKey: "sales_support", points: 3, label: "Özel satış desteği" },
+  { signalKey: "production_coordination", points: 3, label: "Üretim koordinasyonu" },
+  { signalKey: "quotation_process", points: 3, label: "Resmi teklif süreci" },
+  { signalKey: "large_catalog_hint", points: 2, label: "Ürün kataloğu (operasyonel kapsam)" },
 ];
 const OPERATIONAL_MAX = 20;
 
 const CHANNEL_RULES: Rule[] = [
-  { signalKey: "dealer_portal", points: 4, label: "Dealer portal" },
-  { signalKey: "online_order", points: 3, label: "Online ordering" },
-  { signalKey: "quotation_process", points: 2, label: "Quote-request channel" },
+  { signalKey: "dealer_portal", points: 4, label: "Bayi portalı" },
+  { signalKey: "online_order", points: 3, label: "Online sipariş" },
+  { signalKey: "quotation_process", points: 2, label: "Teklif talebi kanalı" },
 ];
 const CHANNEL_MAX = 15;
 
 const AUTOMATION_RULES: Rule[] = [
-  { signalKey: "erp_mentioned", points: 6, label: "Existing ERP/business software (integration target)" },
+  { signalKey: "erp_mentioned", points: 6, label: "Mevcut ERP/işletme yazılımı (entegrasyon hedefi)" },
   {
     signalKey: "manual_order_handling_possible",
     points: 6,
-    label: "Unstructured order channel(s) with no confirmed backend system",
+    label: "Doğrulanmış bir arka uç sistemi olmadan yapılandırılmamış sipariş kanalı",
   },
-  { signalKey: "sales_support", points: 2, label: "Sales support coordination overhead" },
-  { signalKey: "production_coordination", points: 2, label: "Production coordination overhead" },
-  { signalKey: "complex_order_process", points: 4, label: "Complex/custom orders raise error & rework risk" },
+  { signalKey: "sales_support", points: 2, label: "Satış desteği koordinasyon yükü" },
+  { signalKey: "production_coordination", points: 2, label: "Üretim koordinasyon yükü" },
+  { signalKey: "complex_order_process", points: 4, label: "Karmaşık/özel siparişler hata ve yeniden işlem riskini artırır" },
 ];
 const AUTOMATION_MAX = 20;
 
@@ -68,11 +72,11 @@ export function computeScore(signals: SignalEvidence[]): ScoreBreakdown {
     return !!s && (s.classification === "VERIFIED" || s.classification === "INFERRED");
   };
 
-  const b2b = scoreCategory(signals, "b2b", "B2B / Commercial Fit", B2B_RULES, B2B_MAX, isPositive);
+  const b2b = scoreCategory(signals, "b2b", "B2B / Ticari Uyum", B2B_RULES, B2B_MAX, isPositive);
   const orderComplexity = scoreCategory(
     signals,
     "orderComplexity",
-    "Order Complexity",
+    "Sipariş Karmaşıklığı",
     ORDER_COMPLEXITY_RULES,
     ORDER_COMPLEXITY_MAX,
     isPositive,
@@ -80,7 +84,7 @@ export function computeScore(signals: SignalEvidence[]): ScoreBreakdown {
   const operational = scoreCategory(
     signals,
     "operational",
-    "Operational / Order Complexity",
+    "Operasyonel / Sipariş Karmaşıklığı",
     OPERATIONAL_RULES,
     OPERATIONAL_MAX,
     isPositive,
@@ -89,7 +93,7 @@ export function computeScore(signals: SignalEvidence[]): ScoreBreakdown {
   const automation = scoreCategory(
     signals,
     "automation",
-    "Automation Opportunity",
+    "Otomasyon Fırsatı",
     AUTOMATION_RULES,
     AUTOMATION_MAX,
     isPositive,
@@ -143,10 +147,10 @@ function scoreChannel(isPositive: (key: string) => boolean): ScoreCategoryBreakd
 
   if (isPositive("whatsapp_orders")) {
     score += 5;
-    reasons.push("Orders explicitly taken via WhatsApp");
+    reasons.push("Siparişler açıkça WhatsApp üzerinden alınıyor");
   } else if (isPositive("whatsapp_present")) {
     score += 2;
-    reasons.push("WhatsApp channel available (not confirmed for orders)");
+    reasons.push("WhatsApp kanalı mevcut (sipariş için doğrulanmadı)");
   }
 
   for (const rule of CHANNEL_RULES) {
@@ -158,7 +162,7 @@ function scoreChannel(isPositive: (key: string) => boolean): ScoreCategoryBreakd
 
   return {
     category: "channel",
-    label: "Channel Complexity",
+    label: "İletişim Kanalları",
     score: Math.min(score, CHANNEL_MAX),
     max: CHANNEL_MAX,
     reasons,
@@ -173,8 +177,8 @@ function priorityFor(total: number): Priority {
 }
 
 export const PRIORITY_META: Record<Priority, { label: string; emoji: string; range: string }> = {
-  very_high: { label: "Very High", emoji: "🔥", range: "80–100" },
-  high: { label: "High", emoji: "🟠", range: "65–79" },
-  medium: { label: "Medium", emoji: "🟡", range: "45–64" },
-  low: { label: "Low", emoji: "⚪", range: "0–44" },
+  very_high: { label: "Çok Yüksek", emoji: "🔥", range: "80–100" },
+  high: { label: "Yüksek", emoji: "🟠", range: "65–79" },
+  medium: { label: "Orta", emoji: "🟡", range: "45–64" },
+  low: { label: "Düşük", emoji: "⚪", range: "0–44" },
 };

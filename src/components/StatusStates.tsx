@@ -1,4 +1,4 @@
-export function LoadingState({ message = "Loading…" }: { message?: string }) {
+export function LoadingState({ message = "Yükleniyor…" }: { message?: string }) {
   return (
     <div className="card flex items-center gap-3 text-sm text-stone-500">
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-ignis-600" />
@@ -13,7 +13,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <p className="text-sm text-red-800">{message}</p>
       {onRetry && (
         <button onClick={onRetry} className="mt-3 text-sm font-medium text-red-700 underline">
-          Try again
+          Tekrar dene
         </button>
       )}
     </div>
@@ -21,8 +21,8 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 }
 
 export function EmptyState({
-  title = "No leads yet",
-  message = "Run a search to discover businesses and rank them for Ignis fit.",
+  title = "Henüz firma yok",
+  message = "Ignis uygunluğuna göre işletmeleri keşfetmek ve sıralamak için bir arama yapın.",
 }: {
   title?: string;
   message?: string;

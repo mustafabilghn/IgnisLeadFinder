@@ -29,6 +29,16 @@ export const LEAD_STATUSES: LeadStatus[] = [
 
 export type Priority = "very_high" | "high" | "medium" | "low";
 
+/**
+ * Candidate strength RELATIVE to the other results in the same search —
+ * computed from where a lead's score falls in the current result set's
+ * distribution, not from fixed absolute thresholds (that's `Priority`
+ * above, kept only as a secondary reference). A lead can be "very_strong"
+ * here with a score of 24/100 if everything else in that search scored
+ * lower — ranking, not an absolute bar, is the point.
+ */
+export type RelativeLabel = "very_strong" | "strong" | "medium" | "weak";
+
 export interface ScoreCategoryBreakdown {
   category: "b2b" | "orderComplexity" | "operational" | "channel" | "automation";
   label: string;
@@ -115,6 +125,10 @@ export interface Lead {
   // Lead management
   status: LeadStatus;
   notes: string | null;
+
+  // AI ranking (second-stage, on top of the deterministic score — see searchPipeline/aiRankingService)
+  aiRankPosition: number | null;
+  aiRankReason: string | null;
 }
 
 /** Lightweight projection used for the ranked list / table view */
@@ -137,6 +151,13 @@ export interface LeadSummary {
   rating: number | null;
   reviewCount: number | null;
   updatedAt: string;
+
+  /** 1-based position within the current (filtered/sorted) result set. */
+  rank: number;
+  /** Where this lead falls relative to the other results currently shown — see RelativeLabel. */
+  relativeLabel: RelativeLabel;
+  /** Short grounded "why" from the AI ranking pass, when one has run for this lead's search; null otherwise. */
+  aiReason: string | null;
 }
 
 export interface SearchQuery {
@@ -152,6 +173,7 @@ export interface SearchRecord extends SearchQuery {
   createdAt: string;
   resultCount: number;
   provider: BusinessSource;
+  aiRankingGeneratedAt: string | null;
 }
 
 export interface LeadFilters {

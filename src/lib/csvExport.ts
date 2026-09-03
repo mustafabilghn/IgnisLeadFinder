@@ -1,23 +1,35 @@
-import type { Lead } from "./types";
+import type { Lead, LeadStatus, RelativeLabel } from "./types";
 import { PRIORITY_META } from "./scoringEngine";
+import { RELATIVE_LABEL_META } from "./relativeRanking";
+
+const STATUS_LABELS: Record<LeadStatus, string> = {
+  new: "Yeni",
+  contacted: "İletişime Geçildi",
+  interested: "İlgileniyor",
+  meeting: "Görüşme",
+  won: "Kazanıldı",
+  lost: "Kaybedildi",
+};
 
 const HEADERS = [
-  "Business Name",
-  "Category",
-  "Address",
-  "Phone",
-  "Website",
-  "Google Maps URL",
-  "Rating",
-  "Review Count",
-  "Important Signals",
-  "Ignis Fit Score",
-  "Priority",
-  "Status",
-  "Why This Lead",
+  "Firma Adı",
+  "Sektör",
+  "Adres",
+  "Telefon",
+  "Web Sitesi",
+  "Google Haritalar URL",
+  "Puan",
+  "Değerlendirme Sayısı",
+  "Önemli Sinyaller",
+  "Ignis Uygunluk Puanı",
+  "Sıra",
+  "Göreceli Değerlendirme",
+  "Öncelik",
+  "Durum",
+  "Neden Bu Firma",
 ];
 
-export function leadsToCsv(leads: Lead[]): string {
+export function leadsToCsv(leads: (Lead & { rank: number; relativeLabel: RelativeLabel })[]): string {
   const rows = leads.map((lead) => [
     lead.name,
     lead.category,
@@ -29,9 +41,11 @@ export function leadsToCsv(leads: Lead[]): string {
     lead.reviewCount != null ? String(lead.reviewCount) : "",
     lead.score.positiveSignals.join("; "),
     String(lead.score.total),
+    String(lead.rank),
+    RELATIVE_LABEL_META[lead.relativeLabel].label,
     PRIORITY_META[lead.score.priority].label,
-    lead.status,
-    lead.aiSummary ?? "",
+    STATUS_LABELS[lead.status],
+    lead.aiRankReason || lead.aiSummary || "",
   ]);
 
   const lines = [HEADERS, ...rows].map((row) => row.map(csvEscape).join(","));

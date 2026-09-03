@@ -6,7 +6,7 @@ import { getLead, updateLeadStatus } from "@/lib/leadRepository";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const lead = getLead(id);
-  if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  if (!lead) return NextResponse.json({ error: "Firma bulunamadı" }, { status: 404 });
   return NextResponse.json({ lead });
 }
 
@@ -20,18 +20,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Geçersiz JSON gövdesi" }, { status: 400 });
   }
 
   const parsed = leadPatchSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid update", details: parsed.error.flatten().fieldErrors },
+      { error: "Geçersiz güncelleme", details: parsed.error.flatten().fieldErrors },
       { status: 400 },
     );
   }
 
   const updated = updateLeadStatus(id, parsed.data);
-  if (!updated) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  if (!updated) return NextResponse.json({ error: "Firma bulunamadı" }, { status: 404 });
   return NextResponse.json({ lead: updated });
 }

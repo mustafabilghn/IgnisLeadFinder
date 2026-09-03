@@ -6,15 +6,15 @@ import type { AppStatus } from "@/lib/config";
 import { GOOGLE_NOT_CONFIGURED_MESSAGE } from "@/lib/config";
 
 const PRESETS = [
-  { label: "Beylikdüzü · Aluminum/PVC/Glass", country: "Turkey", city: "Istanbul", district: "Beylikdüzü", category: "Aluminum / PVC / Glass" },
-  { label: "İkitelli · Industrial Distributor", country: "Turkey", city: "Istanbul", district: "İkitelli", category: "Industrial Distributor" },
-  { label: "Esenyurt · Metal Manufacturer", country: "Turkey", city: "Istanbul", district: "Esenyurt", category: "Metal Manufacturer" },
+  { label: "Beylikdüzü · Alüminyum/PVC/Cam", country: "Türkiye", city: "İstanbul", district: "Beylikdüzü", category: "Aluminum / PVC / Glass" },
+  { label: "İkitelli · Endüstriyel Distribütör", country: "Türkiye", city: "İstanbul", district: "İkitelli", category: "Industrial Distributor" },
+  { label: "Esenyurt · Metal Üreticisi", country: "Türkiye", city: "İstanbul", district: "Esenyurt", category: "Metal Manufacturer" },
 ];
 
 export function SearchForm({ status }: { status: AppStatus }) {
   const router = useRouter();
-  const [country, setCountry] = useState("Turkey");
-  const [city, setCity] = useState("Istanbul");
+  const [country, setCountry] = useState("Türkiye");
+  const [city, setCity] = useState("İstanbul");
   const [district, setDistrict] = useState("Beylikdüzü");
   const [category, setCategory] = useState("Aluminum / PVC / Glass");
   const [maxResults, setMaxResults] = useState(15);
@@ -36,21 +36,21 @@ export function SearchForm({ status }: { status: AppStatus }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Search failed.");
+        throw new Error(data.error || "Arama başarısız oldu.");
       }
       router.push(`/leads?searchId=${data.searchId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : "Bir şeyler ters gitti.");
       setLoading(false);
     }
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Who should I contact first for Ignis?</h1>
+      <h1 className="text-2xl font-semibold text-stone-900">Ignis için ilk kiminle konuşmalıyım?</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Discover real businesses in an area/industry, analyze their public footprint for Ignis-relevant
-        signals, and rank them so you know who to research or reach out to first.
+        Bir bölge/sektördeki gerçek işletmeleri keşfedin, Ignis açısından önemli sinyaller için kamuya
+        açık izlerini analiz edin ve önce kiminle görüşmeniz gerektiğini bilmek için sıralayın.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -74,28 +74,28 @@ export function SearchForm({ status }: { status: AppStatus }) {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         {searchBlocked && (
           <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-            <p className="font-semibold">🔴 Real data unavailable</p>
+            <p className="font-semibold">🔴 Gerçek veri kullanılamıyor</p>
             <p className="mt-1">{GOOGLE_NOT_CONFIGURED_MESSAGE}</p>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Country">
+          <Field label="Ülke">
             <input
               required
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               className="input"
-              placeholder="Turkey"
+              placeholder="Türkiye"
             />
           </Field>
-          <Field label="City">
-            <input required value={city} onChange={(e) => setCity(e.target.value)} className="input" placeholder="Istanbul" />
+          <Field label="Şehir">
+            <input required value={city} onChange={(e) => setCity(e.target.value)} className="input" placeholder="İstanbul" />
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="District / Neighborhood (optional)">
+          <Field label="İlçe / Semt (opsiyonel)">
             <input
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
@@ -103,7 +103,7 @@ export function SearchForm({ status }: { status: AppStatus }) {
               placeholder="Beylikdüzü"
             />
           </Field>
-          <Field label="Maximum businesses">
+          <Field label="Maksimum işletme sayısı">
             <input
               type="number"
               min={1}
@@ -116,13 +116,13 @@ export function SearchForm({ status }: { status: AppStatus }) {
           </Field>
         </div>
 
-        <Field label="Industry / category">
+        <Field label="Sektör / kategori">
           <input
             required
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="input"
-            placeholder="Aluminum Manufacturer, Industrial Distributor, Metal Manufacturer…"
+            placeholder="Alüminyum Üreticisi, Endüstriyel Distribütör, Metal Üreticisi…"
           />
         </Field>
 
@@ -139,10 +139,10 @@ export function SearchForm({ status }: { status: AppStatus }) {
           className="w-full rounded-lg bg-ignis-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-ignis-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading
-            ? "Finding leads — discovering, scanning websites, scoring…"
+            ? "Firmalar bulunuyor — keşfediliyor, web siteleri taranıyor, puanlanıyor…"
             : searchBlocked
-              ? "Find Leads (blocked — see above)"
-              : "Find Leads"}
+              ? "Ignis İçin Firma Bul (engellendi — yukarıya bakın)"
+              : "Ignis İçin Firma Bul"}
         </button>
       </form>
     </div>

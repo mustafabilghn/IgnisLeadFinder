@@ -31,6 +31,6 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     console.error("CSV export failed:", err);
-    return NextResponse.json({ error: "Failed to export CSV." }, { status: 500 });
+    return NextResponse.json({ error: "CSV dışa aktarılamadı." }, { status: 500 });
   }
 }

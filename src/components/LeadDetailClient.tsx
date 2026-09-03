@@ -9,7 +9,7 @@ import { EvidenceTable } from "@/components/EvidenceTable";
 import { StatusEditor } from "@/components/StatusEditor";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatusStates";
 
-const NOT_AVAILABLE = "Unknown / Not available";
+const NOT_AVAILABLE = "Bilinmiyor / Mevcut değil";
 
 export function LeadDetailClient({ id }: { id: string }) {
   const [lead, setLead] = useState<Lead | null>(null);
@@ -24,10 +24,10 @@ export function LeadDetailClient({ id }: { id: string }) {
     try {
       const res = await fetch(`/api/leads/${id}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load lead.");
+      if (!res.ok) throw new Error(data.error || "Firma yüklenemedi.");
       setLead(data.lead);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load lead.");
+      setError(err instanceof Error ? err.message : "Firma yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -50,23 +50,23 @@ export function LeadDetailClient({ id }: { id: string }) {
     try {
       const res = await fetch(`/api/leads/${id}/rescan`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Rescan failed.");
+      if (!res.ok) throw new Error(data.error || "Yeniden tarama başarısız oldu.");
       setLead(data.lead);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rescan failed.");
+      setError(err instanceof Error ? err.message : "Yeniden tarama başarısız oldu.");
     } finally {
       setRescanning(false);
     }
   }
 
-  if (loading) return <LoadingState message="Loading lead…" />;
+  if (loading) return <LoadingState message="Firma yükleniyor…" />;
   if (error && !lead) return <ErrorState message={error} onRetry={load} />;
-  if (!lead) return <EmptyState title="Lead not found" message="It may have been removed." />;
+  if (!lead) return <EmptyState title="Firma bulunamadı" message="Kaldırılmış olabilir." />;
 
   return (
     <div className="space-y-6">
       <Link href="/leads" className="text-sm text-stone-500 hover:text-ignis-700">
-        ← Back to all leads
+        ← Tüm firmalara dön
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -77,6 +77,14 @@ export function LeadDetailClient({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {lead.aiRankPosition != null && (
+            <span
+              className="rounded-full bg-ignis-100 px-2.5 py-1 text-xs font-bold text-ignis-800"
+              title="Bu firmanın aramasındaki AI sıralaması"
+            >
+              AI Sıra #{lead.aiRankPosition}
+            </span>
+          )}
           <ScoreBadge score={lead.score.total} />
           <PriorityBadge priority={lead.score.priority} />
         </div>
@@ -86,13 +94,18 @@ export function LeadDetailClient({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Section title="Ignis Fit Score">
+          <Section title="Ignis Uygunluk Puanı">
             <ScoreBreakdownCard score={lead.score} />
           </Section>
 
-          <Section title="Ignis Signals" subtitle="Every signal below is either directly observed, derived, inferred, or unknown — never invented.">
+          <Section
+            title="Ignis Sinyalleri"
+            subtitle="Aşağıdaki her sinyal ya doğrudan gözlemlenmiş, türetilmiş, çıkarım yapılmış ya da bilinmiyor — asla uydurulmamıştır."
+          >
             <EvidenceTable signals={lead.signals} />
           </Section>
+
+          <UnknownFactsCard lead={lead} />
 
           <WhyThisLead lead={lead} onLead={setLead} aiConfigured={groqConfigured} />
           <DiscoveryQuestions lead={lead} onLead={setLead} aiConfigured={groqConfigured} />
@@ -100,14 +113,14 @@ export function LeadDetailClient({ id }: { id: string }) {
         </div>
 
         <div className="space-y-6">
-          <Section title="Company">
+          <Section title="Firma">
             <dl className="space-y-2 text-sm">
-              <Row label="Name" value={lead.name} />
-              <Row label="Category" value={lead.category} />
-              <Row label="Address" value={lead.address ?? NOT_AVAILABLE} />
-              <Row label="Phone" value={lead.phone ?? NOT_AVAILABLE} />
+              <Row label="Ad" value={lead.name} />
+              <Row label="Sektör" value={lead.category} />
+              <Row label="Adres" value={lead.address ?? NOT_AVAILABLE} />
+              <Row label="Telefon" value={lead.phone ?? NOT_AVAILABLE} />
               <Row
-                label="Website"
+                label="Web Sitesi"
                 value={
                   lead.website ? (
                     <a href={lead.website} target="_blank" rel="noreferrer" className="text-ignis-700 hover:underline">
@@ -119,11 +132,11 @@ export function LeadDetailClient({ id }: { id: string }) {
                 }
               />
               <Row
-                label="Google Maps"
+                label="Google Haritalar"
                 value={
                   lead.googleMapsUrl ? (
                     <a href={lead.googleMapsUrl} target="_blank" rel="noreferrer" className="text-ignis-700 hover:underline">
-                      Open in Maps
+                      Haritada Aç
                     </a>
                   ) : (
                     NOT_AVAILABLE
@@ -131,42 +144,78 @@ export function LeadDetailClient({ id }: { id: string }) {
                 }
               />
               <Row
-                label="Rating"
-                value={lead.rating != null ? `★ ${lead.rating.toFixed(1)} (${lead.reviewCount ?? 0} reviews)` : NOT_AVAILABLE}
+                label="Puan"
+                value={lead.rating != null ? `★ ${lead.rating.toFixed(1)} (${lead.reviewCount ?? 0} değerlendirme)` : NOT_AVAILABLE}
               />
-              <Row label="Source" value={lead.source === "mock" ? "Mock / demo data" : "Google Places (retrieved)"} />
+              <Row label="Kaynak" value={lead.source === "mock" ? "Test / demo verisi" : "Google Places (alındı)"} />
             </dl>
           </Section>
 
           <Section
-            title="Website Scan"
+            title="Web Sitesi Taraması"
             action={
               <button type="button" onClick={rescan} disabled={rescanning} className="btn-secondary text-xs">
-                {rescanning ? "Rescanning…" : "↻ Rescan"}
+                {rescanning ? "Yeniden taranıyor…" : "↻ Yeniden Tara"}
               </button>
             }
           >
             {lead.websiteScan ? (
               <dl className="space-y-2 text-sm">
-                <Row label="Reachable" value={lead.websiteScan.reachable ? "Yes" : "No"} />
-                <Row label="HTTPS" value={lead.websiteScan.https ? "Yes" : "No"} />
-                <Row label="Page title" value={lead.websiteScan.title ?? NOT_AVAILABLE} />
-                <Row label="Pages checked" value={String(lead.websiteScan.pagesChecked.length)} />
-                <Row label="Last scanned" value={lead.lastScannedAt ? new Date(lead.lastScannedAt).toLocaleString() : NOT_AVAILABLE} />
-                {lead.websiteScan.mock && <Row label="Note" value="Mock website content (demo mode)" />}
-                {lead.websiteScan.error && <Row label="Error" value={<span className="text-red-700">{lead.websiteScan.error}</span>} />}
+                <Row label="Erişilebilir" value={lead.websiteScan.reachable ? "Evet" : "Hayır"} />
+                <Row label="HTTPS" value={lead.websiteScan.https ? "Evet" : "Hayır"} />
+                <Row label="Sayfa başlığı" value={lead.websiteScan.title ?? NOT_AVAILABLE} />
+                <Row label="Taranan sayfa sayısı" value={String(lead.websiteScan.pagesChecked.length)} />
+                <Row
+                  label="Son tarama"
+                  value={lead.lastScannedAt ? new Date(lead.lastScannedAt).toLocaleString("tr-TR") : NOT_AVAILABLE}
+                />
+                {lead.websiteScan.mock && <Row label="Not" value="Test web sitesi içeriği (demo modu)" />}
+                {lead.websiteScan.error && <Row label="Hata" value={<span className="text-red-700">{lead.websiteScan.error}</span>} />}
               </dl>
             ) : (
-              <p className="text-sm text-stone-400">No website scan on file.</p>
+              <p className="text-sm text-stone-400">Kayıtlı bir web sitesi taraması yok.</p>
             )}
           </Section>
 
-          <Section title="Lead Status">
+          <Section title="Firma Durumu">
             <StatusEditor lead={lead} onUpdated={setLead} />
           </Section>
         </div>
       </div>
     </div>
+  );
+}
+
+const HEADLINE_UNKNOWN_KEYS = ["manual_order_entry", "erp_mentioned", "order_volume"] as const;
+const UNKNOWN_FACT_LABELS: Record<(typeof HEADLINE_UNKNOWN_KEYS)[number], string> = {
+  manual_order_entry: "Siparişlerin ne kadarının manuel işlendiği",
+  erp_mentioned: "ERP kullanımı",
+  order_volume: "Günlük/aylık sipariş hacmi",
+};
+
+function UnknownFactsCard({ lead }: { lead: Lead }) {
+  const stillUnknown = HEADLINE_UNKNOWN_KEYS.filter(
+    (key) => lead.signals.find((s) => s.key === key)?.classification === "UNKNOWN",
+  );
+
+  return (
+    <Section
+      title="Henüz Bilinmiyor"
+      subtitle="Bunlar yalnızca doğrudan görüşmeyle netleşebilir — Lead Finder bir satış öncesi araştırma aracıdır."
+    >
+      <ul className="space-y-1.5 text-sm text-stone-600">
+        {stillUnknown.map((key) => (
+          <li key={key} className="flex gap-1.5">
+            <span className="text-stone-300">?</span>
+            {UNKNOWN_FACT_LABELS[key]}
+          </li>
+        ))}
+        <li className="flex gap-1.5">
+          <span className="text-stone-300">?</span>
+          Hatalı/yanlış sipariş oranı
+        </li>
+      </ul>
+    </Section>
   );
 }
 
@@ -222,10 +271,10 @@ function useAiAction(leadId: string, path: string) {
           method: "POST",
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Generation failed.");
+        if (!res.ok) throw new Error(data.error || "Üretim başarısız oldu.");
         return data;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Generation failed.");
+        setError(err instanceof Error ? err.message : "Üretim başarısız oldu.");
         return null;
       } finally {
         setLoading(false);
@@ -241,7 +290,7 @@ function AiUnavailableNote({ aiConfigured }: { aiConfigured: boolean | null }) {
   if (aiConfigured !== false) return null;
   return (
     <p className="mb-2 text-xs font-medium text-red-700">
-      ✗ AI unavailable — add GROQ_API_KEY to the server environment to enable AI analysis.
+      ✗ AI kullanılamıyor — AI analizini etkinleştirmek için sunucu ortamına GROQ_API_KEY ekleyin.
     </p>
   );
 }
@@ -264,8 +313,8 @@ function WhyThisLead({
 
   return (
     <Section
-      title="Why This Lead?"
-      subtitle="A short explanation grounded only in the evidence above."
+      title="Neden Bu Firma?"
+      subtitle="Yalnızca yukarıdaki kanıtlara dayanan kısa bir açıklama."
       action={
         <button
           type="button"
@@ -273,7 +322,7 @@ function WhyThisLead({
           disabled={loading || aiConfigured === false}
           className="btn-secondary text-xs"
         >
-          {loading ? "Thinking…" : lead.aiSummary ? "Regenerate" : "Generate"}
+          {loading ? "Düşünüyor…" : lead.aiSummary ? "Yeniden Oluştur" : "Oluştur"}
         </button>
       }
     >
@@ -282,7 +331,7 @@ function WhyThisLead({
       {lead.aiSummary ? (
         <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700">{lead.aiSummary}</p>
       ) : (
-        <p className="text-sm text-stone-400">Not generated yet.</p>
+        <p className="text-sm text-stone-400">Henüz oluşturulmadı.</p>
       )}
     </Section>
   );
@@ -306,8 +355,8 @@ function DiscoveryQuestions({
 
   return (
     <Section
-      title="Discovery Questions"
-      subtitle="Learning-oriented questions for a first conversation — not a sales pitch."
+      title="Keşif Soruları"
+      subtitle="İlk görüşme için öğrenme odaklı sorular — satış konuşması değil."
       action={
         <button
           type="button"
@@ -315,7 +364,7 @@ function DiscoveryQuestions({
           disabled={loading || aiConfigured === false}
           className="btn-secondary text-xs"
         >
-          {loading ? "Thinking…" : lead.discoveryQuestions ? "Regenerate" : "Generate"}
+          {loading ? "Düşünüyor…" : lead.discoveryQuestions ? "Yeniden Oluştur" : "Oluştur"}
         </button>
       }
     >
@@ -328,7 +377,7 @@ function DiscoveryQuestions({
           ))}
         </ol>
       ) : (
-        <p className="text-sm text-stone-400">Not generated yet.</p>
+        <p className="text-sm text-stone-400">Henüz oluşturulmadı.</p>
       )}
     </Section>
   );
@@ -364,8 +413,8 @@ function OutreachMessage({
 
   return (
     <Section
-      title="Personalized Outreach Message"
-      subtitle="Research-oriented, never a sales pitch. Always review before sending."
+      title="Kişiselleştirilmiş İletişim Mesajı"
+      subtitle="Araştırma odaklı, asla satış konuşması değil. Göndermeden önce mutlaka gözden geçirin."
       action={
         <button
           type="button"
@@ -373,7 +422,7 @@ function OutreachMessage({
           disabled={loading || aiConfigured === false}
           className="btn-secondary text-xs"
         >
-          {loading ? "Thinking…" : lead.outreachMessage ? "Regenerate" : "Generate"}
+          {loading ? "Düşünüyor…" : lead.outreachMessage ? "Yeniden Oluştur" : "Oluştur"}
         </button>
       }
     >
@@ -385,11 +434,11 @@ function OutreachMessage({
             {lead.outreachMessage}
           </p>
           <button type="button" onClick={copy} className="text-xs font-medium text-ignis-700 hover:underline">
-            {copied ? "Copied ✓" : "Copy to clipboard"}
+            {copied ? "Kopyalandı ✓" : "Panoya Kopyala"}
           </button>
         </div>
       ) : (
-        <p className="text-sm text-stone-400">Not generated yet.</p>
+        <p className="text-sm text-stone-400">Henüz oluşturulmadı.</p>
       )}
     </Section>
   );

@@ -66,7 +66,13 @@ export function buildEvidencePayload(lead: Lead): EvidencePayload {
 }
 
 export function languageFor(lead: Lead): "tr" | "en" {
-  return (lead.country || "").toLowerCase().includes("turk") ? "tr" : "en";
+  return isTurkeyCountry(lead.country) ? "tr" : "en";
+}
+
+/** Matches both "Turkey" and the Turkish spelling "Türkiye" (won't match "turk" as a plain substring). */
+export function isTurkeyCountry(country: string | null | undefined): boolean {
+  const c = (country || "").toLowerCase();
+  return c.includes("turk") || c.includes("türk");
 }
 
 /**
@@ -74,15 +80,24 @@ export function languageFor(lead: Lead): "tr" | "en" {
  * calls this, never the Groq SDK directly, so the provider can be swapped
  * again later by editing this one file. Throws NotConfiguredError if
  * GROQ_API_KEY is unset; callers must not catch that into a fake response.
+ *
+ * `systemPrompt` defaults to the single-lead grounding prompt above; pass a
+ * task-specific one (e.g. the multi-candidate ranking prompt) when needed —
+ * either way the same "don't invent facts" discipline applies, just framed
+ * for the task at hand.
  */
-export async function callAiModel(userPrompt: string, maxTokens: number): Promise<string> {
+export async function callAiModel(
+  userPrompt: string,
+  maxTokens: number,
+  systemPrompt: string = GROUNDING_SYSTEM_PROMPT,
+): Promise<string> {
   const client = getGroqClient();
 
   const response = await client.chat.completions.create({
     model: AI_MODEL,
     max_tokens: maxTokens,
     messages: [
-      { role: "system", content: GROUNDING_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
   });

@@ -5,6 +5,15 @@ import type { Lead, LeadStatus } from "@/lib/types";
 
 const STATUSES: LeadStatus[] = ["new", "contacted", "interested", "meeting", "won", "lost"];
 
+const STATUS_LABELS: Record<LeadStatus, string> = {
+  new: "Yeni",
+  contacted: "İletişime Geçildi",
+  interested: "İlgileniyor",
+  meeting: "Görüşme",
+  won: "Kazanıldı",
+  lost: "Kaybedildi",
+};
+
 export function StatusEditor({ lead, onUpdated }: { lead: Lead; onUpdated: (lead: Lead) => void }) {
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [notes, setNotes] = useState(lead.notes ?? "");
@@ -24,12 +33,12 @@ export function StatusEditor({ lead, onUpdated }: { lead: Lead; onUpdated: (lead
         body: JSON.stringify({ status, notes }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save.");
+      if (!res.ok) throw new Error(data.error || "Kaydedilemedi.");
       onUpdated(data.lead);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
+      setError(err instanceof Error ? err.message : "Kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -38,31 +47,31 @@ export function StatusEditor({ lead, onUpdated }: { lead: Lead; onUpdated: (lead
   return (
     <div className="space-y-3">
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">Status</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">Durum</span>
         <select value={status} onChange={(e) => setStatus(e.target.value as LeadStatus)} className="input">
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s[0].toUpperCase() + s.slice(1)}
+              {STATUS_LABELS[s]}
             </option>
           ))}
         </select>
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">Notes</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">Notlar</span>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
           className="input resize-none"
-          placeholder="Anything worth remembering before you reach out…"
+          placeholder="İletişime geçmeden önce hatırlamaya değer bir şey…"
         />
       </label>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
 
       <button type="button" onClick={save} disabled={saving || !dirty} className="btn-secondary w-full">
-        {saving ? "Saving…" : justSaved ? "Saved ✓" : "Save status & notes"}
+        {saving ? "Kaydediliyor…" : justSaved ? "Kaydedildi ✓" : "Durumu ve notları kaydet"}
       </button>
     </div>
   );

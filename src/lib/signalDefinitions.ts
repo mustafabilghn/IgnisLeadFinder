@@ -4,7 +4,9 @@
 //
 // IMPORTANT: this is the ONLY place keyword lists live. The scoring engine and
 // signal extractor both read from here so the "what counts as evidence" logic
-// stays in one auditable spot.
+// stays in one auditable spot. `label`/`description` are Turkish (UI text);
+// `key`, `phrases`, and `proximity` are detection logic and unrelated to
+// display language, so they stay as-is.
 
 export interface SignalDefinition {
   key: string;
@@ -28,25 +30,25 @@ export interface SignalDefinition {
 export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
   {
     key: "b2b_explicit",
-    label: "B2B explicitly stated",
+    label: "B2B açıkça belirtilmiş",
     phrases: ["b2b", "business to business", "b2b müşteri", "b2b çözüm", "b2b platform"],
-    description: "The site explicitly describes B2B operations.",
+    description: "Site B2B operasyonlarını açıkça tanımlıyor.",
   },
   {
     key: "wholesale",
-    label: "Wholesale",
+    label: "Toptan satış",
     phrases: ["wholesale", "toptan satış", "toptan fiyat", "toptan"],
-    description: "The site mentions wholesale selling.",
+    description: "Site toptan satıştan bahsediyor.",
   },
   {
     key: "distributor",
-    label: "Distributor",
+    label: "Distribütör",
     phrases: ["distributor", "distribütör", "distribütörlük", "yetkili distribütör"],
-    description: "The site identifies the company as a distributor.",
+    description: "Site şirketi distribütör olarak tanımlıyor.",
   },
   {
     key: "dealer_network",
-    label: "Dealer network",
+    label: "Bayi ağı",
     phrases: [
       "dealer network",
       "bayi ağı",
@@ -55,11 +57,11 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "yetkili bayi",
       "bayi listesi",
     ],
-    description: "The site references an existing dealer network.",
+    description: "Site mevcut bir bayi ağına referans veriyor.",
   },
   {
     key: "become_dealer",
-    label: "Recruiting dealers",
+    label: "Bayi arıyor",
     phrases: [
       "become a dealer",
       "become our dealer",
@@ -71,23 +73,23 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
     // Real example: "Bayimizin Olun" (a common e-commerce marketing-badge
     // variant with a possessive suffix) doesn't match "bayimiz olun" above.
     proximity: { anchor: "bayi", contextWords: ["olun", "katılın", "katilin"], radius: 20 },
-    description: "The site actively recruits new dealers.",
+    description: "Site aktif olarak yeni bayi arıyor.",
   },
   {
     key: "dealer_portal",
-    label: "Dealer portal",
+    label: "Bayi portalı",
     phrases: ["dealer portal", "dealer login", "bayi girişi", "bayi paneli", "bayi girisi"],
-    description: "A dedicated login/portal exists for dealers.",
+    description: "Bayiler için özel bir giriş/portal mevcut.",
   },
   {
     key: "corporate_customers",
-    label: "Corporate customer focus",
+    label: "Kurumsal müşteri odağı",
     phrases: ["corporate customer", "kurumsal müşteri", "kurumsal çözümler", "kurumsal satış"],
-    description: "The site addresses corporate/institutional customers.",
+    description: "Site kurumsal/resmi müşterilere hitap ediyor.",
   },
   {
     key: "custom_production",
-    label: "Custom-sized / custom production",
+    label: "Özel ölçü / özel üretim",
     phrases: [
       "custom size",
       "custom production",
@@ -98,11 +100,11 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "ölçüye özel",
       "size özel üretim",
     ],
-    description: "Products are made or sized to customer specification.",
+    description: "Ürünler müşteri talebine göre üretiliyor veya ölçüleniyor.",
   },
   {
     key: "technical_specs",
-    label: "Technical specifications",
+    label: "Teknik özellikler",
     phrases: [
       "technical specification",
       "datasheet",
@@ -111,17 +113,17 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "teknik çizim",
       "teknik döküman",
     ],
-    description: "Technical specs/datasheets are published for products.",
+    description: "Ürünler için teknik özellik/döküman yayınlanmış.",
   },
   {
     key: "configurable_products",
-    label: "Configurable products",
+    label: "Konfigüre edilebilir ürünler",
     phrases: ["configurator", "configurable", "konfigüratör", "yapılandırma seçenekleri"],
-    description: "Products can be configured with options/variants.",
+    description: "Ürünler seçenek/varyantlarla yapılandırılabiliyor.",
   },
   {
     key: "project_based",
-    label: "Project-based work",
+    label: "Proje bazlı çalışma",
     phrases: [
       "project based",
       "project-based",
@@ -130,11 +132,11 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "anahtar teslim",
       "turnkey project",
     ],
-    description: "Work is delivered as customer-specific projects.",
+    description: "Çalışmalar müşteriye özel projeler olarak yürütülüyor.",
   },
   {
     key: "quotation_process",
-    label: "Quotation process",
+    label: "Teklif süreci",
     phrases: [
       "request a quote",
       "get a quote",
@@ -144,11 +146,11 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "teklif isteyin",
       "teklif formu",
     ],
-    description: "A formal request-a-quote flow exists.",
+    description: "Resmi bir teklif alma akışı mevcut.",
   },
   {
     key: "online_order",
-    label: "Online ordering",
+    label: "Online sipariş",
     phrases: [
       "place an order",
       "online order",
@@ -157,17 +159,17 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "add to cart",
       "sepete ekle",
     ],
-    description: "Orders can be placed directly online.",
+    description: "Siparişler doğrudan online verilebiliyor.",
   },
   {
     key: "whatsapp_present",
-    label: "WhatsApp channel available",
+    label: "WhatsApp kanalı mevcut",
     phrases: ["whatsapp"],
-    description: "A WhatsApp contact link/icon is present.",
+    description: "Bir WhatsApp iletişim linki/ikonu mevcut.",
   },
   {
     key: "whatsapp_orders",
-    label: "Orders taken via WhatsApp",
+    label: "Siparişler WhatsApp üzerinden alınıyor",
     phrases: [
       "whatsapp üzerinden sipariş",
       "whatsapp'tan sipariş",
@@ -187,42 +189,42 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       contextWords: ["sipariş", "siparis", "alım", "alim", "satış", "satis", "toptan", "teklif", "order", "purchase"],
       radius: 50,
     },
-    description: "The site explicitly states orders are accepted via WhatsApp.",
+    description: "Site siparişlerin WhatsApp üzerinden kabul edildiğini açıkça belirtiyor.",
   },
   {
     key: "erp_mentioned",
-    label: "ERP / business software",
+    label: "ERP / işletme yazılımı",
     phrases: [" erp", "erp ", "enterprise resource planning", "logo yazılım", "netsis", " sap "],
-    description: "The site references an ERP or named business software system.",
+    description: "Site bir ERP veya isimlendirilmiş işletme yazılımına referans veriyor.",
   },
   {
     key: "multiple_locations",
-    label: "Multiple locations",
+    label: "Birden fazla lokasyon",
     phrases: ["şubelerimiz", "our branches", "bölge bayileri", "fabrika ve şubeler", "showroom"],
-    description: "More than one physical location is referenced.",
+    description: "Birden fazla fiziksel lokasyona referans veriliyor.",
   },
   {
     key: "sales_support",
-    label: "Dedicated sales support",
+    label: "Özel satış desteği",
     phrases: ["satış destek", "sales support", "müşteri temsilcisi", "satış temsilcisi"],
-    description: "A dedicated sales/account support function is mentioned.",
+    description: "Özel bir satış/müşteri destek fonksiyonu belirtiliyor.",
   },
   {
     key: "production_coordination",
-    label: "Production coordination",
+    label: "Üretim koordinasyonu",
     phrases: [
       "üretim planlama",
       "production planning",
       "production coordination",
       "üretim koordinasyon",
     ],
-    description: "Production planning/coordination is referenced.",
+    description: "Üretim planlama/koordinasyonuna referans veriliyor.",
   },
   {
     key: "large_catalog_hint",
-    label: "Product catalog",
+    label: "Ürün kataloğu",
     phrases: ["ürün kataloğu", "product catalog", "katalog indir", "download catalog"],
-    description: "A formal product catalog is published.",
+    description: "Resmi bir ürün kataloğu yayınlanmış.",
   },
 ];
 

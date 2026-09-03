@@ -23,9 +23,10 @@ export function isGroqConfigured(): boolean {
 }
 
 export const GOOGLE_NOT_CONFIGURED_MESSAGE =
-  "Google Places API is not configured. Add GOOGLE_MAPS_API_KEY to the server environment before searching for real businesses.";
+  "Google Places API yapılandırılmamış. Gerçek işletmelerde arama yapmadan önce sunucu ortamına GOOGLE_MAPS_API_KEY ekleyin.";
 
-export const GROQ_NOT_CONFIGURED_MESSAGE = "Groq API is not configured. Add GROQ_API_KEY to enable AI analysis.";
+export const GROQ_NOT_CONFIGURED_MESSAGE =
+  "Groq API yapılandırılmamış. AI analizini etkinleştirmek için GROQ_API_KEY ekleyin.";
 
 export interface AppStatus {
   businessMode: BusinessProviderMode;

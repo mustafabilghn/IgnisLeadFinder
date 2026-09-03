@@ -7,10 +7,18 @@ const STYLES: Record<EvidenceClassification, string> = {
   UNKNOWN: "bg-stone-100 text-stone-500",
 };
 
+// Data-layer values (VERIFIED/DERIVED/INFERRED/UNKNOWN) are unchanged — only the displayed text is Turkish.
+const LABELS: Record<EvidenceClassification, string> = {
+  VERIFIED: "DOĞRULANDI",
+  DERIVED: "TÜRETİLDİ",
+  INFERRED: "ÇIKARIM",
+  UNKNOWN: "BİLİNMİYOR",
+};
+
 export function ClassificationBadge({ classification }: { classification: EvidenceClassification }) {
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${STYLES[classification]}`}>
-      {classification}
+      {LABELS[classification]}
     </span>
   );
 }

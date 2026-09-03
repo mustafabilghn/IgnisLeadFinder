@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { SQLInputValue } from "node:sqlite";
 import { getDb } from "./db";
+import { computeRelativeLabel } from "./relativeRanking";
 import type {
   DiscoveredBusiness,
   Lead,
   LeadFilters,
   LeadStatus,
   LeadSummary,
+  RelativeLabel,
   ScoreBreakdown,
   SearchQuery,
   SearchRecord,
@@ -49,6 +51,21 @@ interface LeadRow {
   outreach_message: string | null;
   status: string;
   notes: string | null;
+  ai_rank_position: number | null;
+  ai_rank_reason: string | null;
+}
+
+interface SearchRow {
+  id: string;
+  country: string;
+  city: string;
+  district: string | null;
+  category: string;
+  max_results: number;
+  provider: BusinessSource;
+  result_count: number;
+  created_at: string;
+  ai_ranking_generated_at: string | null;
 }
 
 const DEFAULT_SCORE: ScoreBreakdown = {
@@ -69,6 +86,7 @@ export function createSearch(query: SearchQuery, provider: BusinessSource): Sear
     createdAt: new Date().toISOString(),
     resultCount: 0,
     provider,
+    aiRankingGeneratedAt: null,
   };
   db.prepare(
     `INSERT INTO searches (id, country, city, district, category, max_results, provider, result_count, created_at)
@@ -88,6 +106,30 @@ export function createSearch(query: SearchQuery, provider: BusinessSource): Sear
 
 export function updateSearchResultCount(searchId: string, count: number): void {
   getDb().prepare(`UPDATE searches SET result_count = ? WHERE id = ?`).run(count, searchId);
+}
+
+export function getSearch(searchId: string): SearchRecord | null {
+  const row = getDb().prepare(`SELECT * FROM searches WHERE id = ?`).get(searchId) as SearchRow | undefined;
+  return row ? rowToSearchRecord(row) : null;
+}
+
+/**
+ * Persists the second-stage AI ranking: sets each ranked lead's position
+ * (1-based) + short grounded reason, and marks the search as having a
+ * ranking so repeat views don't re-call Groq. Leads NOT included in
+ * `entries` (outside the pool sent to AI, or a candidate Groq skipped)
+ * simply keep ai_rank_position NULL and fall back to score-order.
+ */
+export function saveAiRanking(searchId: string, entries: { leadId: string; reason: string }[]): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const update = db.prepare(
+    `UPDATE leads SET ai_rank_position = @pos, ai_rank_reason = @reason, updated_at = @now WHERE id = @id`,
+  );
+  entries.forEach((entry, idx) => {
+    update.run({ pos: idx + 1, reason: entry.reason, now, id: entry.leadId });
+  });
+  db.prepare(`UPDATE searches SET ai_ranking_generated_at = @now WHERE id = @searchId`).run({ now, searchId });
 }
 
 // ── Leads: discovery + upsert ──────────────────────────────────────────
@@ -265,18 +307,49 @@ export function getLead(id: string): Lead | null {
 }
 
 export function listLeads(filters: LeadFilters): LeadSummary[] {
-  const { where, params } = buildWhereClause(filters);
-  const rows = getDb()
-    .prepare(`SELECT * FROM leads ${where} ORDER BY score_total DESC, updated_at DESC`)
-    .all(params) as unknown as LeadRow[];
-  return rows.map(rowToSummary);
+  const rows = fetchOrderedRows(filters);
+  const scores = rows.map((r) => r.score_total);
+  return rows.map((row, idx) => rowToSummary(row, idx + 1, scores));
 }
 
-export function listLeadsFull(filters: LeadFilters): Lead[] {
+export function listLeadsFull(filters: LeadFilters): (Lead & { rank: number; relativeLabel: RelativeLabel })[] {
+  const rows = fetchOrderedRows(filters);
+  const scores = rows.map((r) => r.score_total);
+  return rows.map((row, idx) => ({
+    ...rowToLead(row),
+    rank: idx + 1,
+    relativeLabel: computeRelativeLabel(row.score_total, scores),
+  }));
+}
+
+/**
+ * Fetches the filtered set sorted by deterministic score (SQL, stable
+ * tie-break on recency), then — when an AI ranking has run for some of
+ * these leads — resorts by ai_rank_position ascending, nulls (not yet
+ * AI-ranked) falling back to that same score order. Array.prototype.sort
+ * is stable, so leads that tie on ai_rank_position (both null) keep the
+ * SQL-provided score order rather than being shuffled.
+ */
+function fetchOrderedRows(filters: LeadFilters): LeadRow[] {
   const { where, params } = buildWhereClause(filters);
   const rows = getDb()
     .prepare(`SELECT * FROM leads ${where} ORDER BY score_total DESC, updated_at DESC`)
     .all(params) as unknown as LeadRow[];
+
+  return [...rows].sort((a, b) => {
+    const aPos = a.ai_rank_position ?? Number.POSITIVE_INFINITY;
+    const bPos = b.ai_rank_position ?? Number.POSITIVE_INFINITY;
+    return aPos - bPos;
+  });
+}
+
+/** Leads for one search, sorted purely by deterministic score — used only to
+ * pick the AI-ranking candidate pool, so a regenerate isn't biased by a
+ * stale prior AI order. */
+export function listLeadsForRanking(searchId: string): Lead[] {
+  const rows = getDb()
+    .prepare(`SELECT * FROM leads WHERE search_id = ? ORDER BY score_total DESC, updated_at DESC`)
+    .all(searchId) as unknown as LeadRow[];
   return rows.map(rowToLead);
 }
 
@@ -357,10 +430,12 @@ function rowToLead(row: LeadRow): Lead {
     outreachMessage: row.outreach_message,
     status: row.status as LeadStatus,
     notes: row.notes,
+    aiRankPosition: row.ai_rank_position,
+    aiRankReason: row.ai_rank_reason,
   };
 }
 
-function rowToSummary(row: LeadRow): LeadSummary {
+function rowToSummary(row: LeadRow, rank: number, allScoresInSet: number[]): LeadSummary {
   return {
     id: row.id,
     source: row.source,
@@ -380,5 +455,23 @@ function rowToSummary(row: LeadRow): LeadSummary {
     rating: row.rating,
     reviewCount: row.review_count,
     updatedAt: row.updated_at,
+    rank,
+    relativeLabel: computeRelativeLabel(row.score_total, allScoresInSet),
+    aiReason: row.ai_rank_reason,
+  };
+}
+
+function rowToSearchRecord(row: SearchRow): SearchRecord {
+  return {
+    id: row.id,
+    country: row.country,
+    city: row.city,
+    district: row.district ?? undefined,
+    category: row.category,
+    maxResults: row.max_results,
+    createdAt: row.created_at,
+    resultCount: row.result_count,
+    provider: row.provider,
+    aiRankingGeneratedAt: row.ai_ranking_generated_at,
   };
 }

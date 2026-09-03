@@ -12,13 +12,13 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Geçersiz JSON gövdesi" }, { status: 400 });
   }
 
   const parsed = searchQuerySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid search input", details: parsed.error.flatten().fieldErrors },
+      { error: "Geçersiz arama girdisi", details: parsed.error.flatten().fieldErrors },
       { status: 400 },
     );
   }

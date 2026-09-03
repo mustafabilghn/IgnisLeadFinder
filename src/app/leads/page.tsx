@@ -4,7 +4,7 @@ import { LoadingState } from "@/components/StatusStates";
 
 export default function LeadsPage() {
   return (
-    <Suspense fallback={<LoadingState message="Loading leads…" />}>
+    <Suspense fallback={<LoadingState message="Firmalar yükleniyor…" />}>
       <LeadsExplorer />
     </Suspense>
   );

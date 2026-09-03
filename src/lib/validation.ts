@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 export const searchQuerySchema = z.object({
-  country: z.string().trim().min(1, "Country is required").max(100),
-  city: z.string().trim().min(1, "City is required").max(100),
+  country: z.string().trim().min(1, "Ülke zorunludur").max(100),
+  city: z.string().trim().min(1, "Şehir zorunludur").max(100),
   district: z.string().trim().max(100).optional(),
-  category: z.string().trim().min(1, "Industry/category is required").max(150),
+  category: z.string().trim().min(1, "Sektör/kategori zorunludur").max(150),
   maxResults: z.coerce.number().int().min(1).max(60),
 });
 

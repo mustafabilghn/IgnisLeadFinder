@@ -13,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const forceRegenerate = url.searchParams.get("regenerate") === "1";
 
   const lead = getLead(id);
-  if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  if (!lead) return NextResponse.json({ error: "Firma bulunamadı" }, { status: 404 });
 
   if (lead.outreachMessage && !forceRegenerate) {
     return NextResponse.json({ message: lead.outreachMessage, cached: true });

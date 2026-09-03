@@ -5,15 +5,15 @@ export function DiagnosticsPanel({ status }: { status: AppStatus }) {
     {
       label: "Google Places API",
       ok: status.businessMode === "mock" ? null : status.googleConfigured,
-      okText: "Configured",
-      badText: "Missing GOOGLE_MAPS_API_KEY",
-      note: status.businessMode === "mock" ? "Skipped — BUSINESS_PROVIDER=mock is active" : undefined,
+      okText: "Yapılandırıldı",
+      badText: "GOOGLE_MAPS_API_KEY eksik",
+      note: status.businessMode === "mock" ? "Atlandı — BUSINESS_PROVIDER=mock aktif" : undefined,
     },
     {
       label: "Groq AI",
       ok: status.groqConfigured,
-      okText: "Configured",
-      badText: "Missing GROQ_API_KEY",
+      okText: "Yapılandırıldı",
+      badText: "GROQ_API_KEY eksik",
     },
   ];
 
@@ -22,10 +22,10 @@ export function DiagnosticsPanel({ status }: { status: AppStatus }) {
   return (
     <div className="card">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-stone-900">System Status</h2>
+        <h2 className="text-sm font-semibold text-stone-900">Sistem Durumu</h2>
         {!allGood && (
           <span className="text-xs text-stone-500">
-            Set these in <code className="rounded bg-stone-100 px-1 py-0.5">.env.local</code>, then restart the server.
+            Bunları <code className="rounded bg-stone-100 px-1 py-0.5">.env.local</code> içinde ayarlayıp sunucuyu yeniden başlatın.
           </span>
         )}
       </div>

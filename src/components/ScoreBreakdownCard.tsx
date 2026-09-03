@@ -7,7 +7,7 @@ export function ScoreBreakdownCard({ score }: { score: ScoreBreakdown }) {
       <div className="flex items-center gap-4">
         <div className="text-4xl font-bold text-stone-900">{score.total}</div>
         <div>
-          <div className="text-xs text-stone-400">/ 100 — Ignis Fit Score</div>
+          <div className="text-xs text-stone-400">/ 100 — Ignis Uygunluk Puanı</div>
           <PriorityBadge priority={score.priority} />
         </div>
       </div>
@@ -37,10 +37,10 @@ export function ScoreBreakdownCard({ score }: { score: ScoreBreakdown }) {
       <div className="grid grid-cols-1 gap-4 border-t border-stone-100 pt-4 sm:grid-cols-2">
         <div>
           <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Positive signals
+            Olumlu sinyaller
           </div>
           {score.positiveSignals.length === 0 ? (
-            <p className="text-sm text-stone-400">None found on the scanned pages.</p>
+            <p className="text-sm text-stone-400">Taranan sayfalarda bulunamadı.</p>
           ) : (
             <ul className="space-y-1 text-sm text-stone-600">
               {score.positiveSignals.map((s) => (
@@ -53,9 +53,9 @@ export function ScoreBreakdownCard({ score }: { score: ScoreBreakdown }) {
           )}
         </div>
         <div>
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">Unknown</div>
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">Bilinmiyor</div>
           {score.unknownSignals.length === 0 ? (
-            <p className="text-sm text-stone-400">Nothing flagged.</p>
+            <p className="text-sm text-stone-400">İşaretlenen bir şey yok.</p>
           ) : (
             <ul className="space-y-1 text-sm text-stone-600">
               {score.unknownSignals.map((s) => (

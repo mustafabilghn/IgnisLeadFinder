@@ -32,7 +32,7 @@ export async function analyzeWebsite(input: AnalyzerInput): Promise<AnalyzedWebs
         title: null,
         pagesChecked: [],
         scannedAt: now,
-        error: "No website on file",
+        error: "Kayıtlı web sitesi yok",
       },
     };
   }
@@ -94,7 +94,7 @@ async function analyzeLive(rawUrl: string, now: string): Promise<AnalyzedWebsite
         title: null,
         pagesChecked: [],
         scannedAt: now,
-        error: err instanceof Error ? err.message : "Failed to fetch website",
+        error: err instanceof Error ? err.message : "Web sitesine erişilemedi",
       },
     };
   }

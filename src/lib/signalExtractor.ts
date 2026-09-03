@@ -18,8 +18,8 @@ export function extractSignals(
   const verifiedKeys = new Set<string>();
 
   const unreachableSource = opts.websiteUnreachable
-    ? "Website unreachable — could not be scanned"
-    : "No website on file";
+    ? "Web sitesine ulaşılamadı — taranamadı"
+    : "Kayıtlı web sitesi yok";
 
   for (const def of SIGNAL_DEFINITIONS) {
     let hit = pages.length > 0 ? findFirstMatch(pages, def.phrases) : null;
@@ -33,8 +33,8 @@ export function extractSignals(
         key: def.key,
         label: def.label,
         classification: "VERIFIED",
-        value: "Found on website",
-        source: `Website: ${hit.url}`,
+        value: "Web sitesinde bulundu",
+        source: `Web Sitesi: ${hit.url}`,
         evidenceSnippet: hit.snippet,
         timestamp: now,
       });
@@ -43,8 +43,8 @@ export function extractSignals(
         key: def.key,
         label: def.label,
         classification: "UNKNOWN",
-        value: "Not found on scanned pages",
-        source: pages.length > 0 ? "Website scan (not mentioned)" : unreachableSource,
+        value: "Taranan sayfalarda bulunamadı",
+        source: pages.length > 0 ? "Web sitesi taraması (belirtilmemiş)" : unreachableSource,
         timestamp: now,
       });
     }
@@ -57,20 +57,20 @@ export function extractSignals(
   if (complexOrderDrivers.length > 0) {
     evidence.push({
       key: "complex_order_process",
-      label: "Complex order process",
+      label: "Karmaşık sipariş süreci",
       classification: "INFERRED",
-      value: "Likely",
-      source: "Derived from verified signals",
-      evidenceSnippet: `Based on: ${complexOrderDrivers.join(", ")}`,
+      value: "Muhtemel",
+      source: "Doğrulanmış sinyallerden türetildi",
+      evidenceSnippet: `Şuna dayanıyor: ${complexOrderDrivers.join(", ")}`,
       timestamp: now,
     });
   } else {
     evidence.push({
       key: "complex_order_process",
-      label: "Complex order process",
+      label: "Karmaşık sipariş süreci",
       classification: "UNKNOWN",
-      value: "Not enough evidence",
-      source: "Derived from verified signals",
+      value: "Yeterli kanıt yok",
+      source: "Doğrulanmış sinyallerden türetildi",
       timestamp: now,
     });
   }
@@ -81,13 +81,13 @@ export function extractSignals(
   if (manualHandlingHints.length > 0 && !verifiedKeys.has("erp_mentioned")) {
     evidence.push({
       key: "manual_order_handling_possible",
-      label: "Possible manual order handling",
+      label: "Olası manuel sipariş işleme",
       classification: "INFERRED",
-      value: "Possible signal",
-      source: "Derived from verified signals",
-      evidenceSnippet: `Order channel(s) found (${manualHandlingHints.join(
+      value: "Olası sinyal",
+      source: "Doğrulanmış sinyallerden türetildi",
+      evidenceSnippet: `Sipariş kanalı/kanalları bulundu (${manualHandlingHints.join(
         ", ",
-      )}) with no public mention of ERP/business software — should be verified directly.`,
+      )}) ancak kamuya açık ERP/işletme yazılımı bilgisi yok — doğrudan doğrulanmalı.`,
       timestamp: now,
     });
   }
@@ -95,17 +95,17 @@ export function extractSignals(
   // Always-present placeholders for things a public website can never confirm.
   evidence.push({
     key: "order_volume",
-    label: "Actual order volume",
+    label: "Gerçek sipariş hacmi",
     classification: "UNKNOWN",
-    value: "Not publicly determinable",
+    value: "Kamuya açık olarak belirlenemez",
     source: "N/A",
     timestamp: now,
   });
   evidence.push({
     key: "manual_order_entry",
-    label: "Manual order entry process",
+    label: "Manuel sipariş giriş süreci",
     classification: "UNKNOWN",
-    value: "Requires direct conversation to confirm",
+    value: "Doğrudan görüşmeyle doğrulanmalı",
     source: "N/A",
     timestamp: now,
   });

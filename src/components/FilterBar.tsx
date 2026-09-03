@@ -1,6 +1,6 @@
 "use client";
 
-import type { LeadFilters } from "@/lib/types";
+import type { LeadFilters, LeadStatus } from "@/lib/types";
 
 export interface FilterBarProps {
   filters: LeadFilters;
@@ -11,11 +11,20 @@ export interface FilterBarProps {
 
 const TOGGLES: { key: keyof LeadFilters; label: string }[] = [
   { key: "b2b", label: "B2B" },
-  { key: "dealer", label: "Dealer" },
-  { key: "technical", label: "Technical/Custom" },
+  { key: "dealer", label: "Bayi" },
+  { key: "technical", label: "Teknik/Özel Üretim" },
   { key: "whatsapp", label: "WhatsApp" },
-  { key: "hasWebsite", label: "Has website" },
+  { key: "hasWebsite", label: "Web Sitesi Var" },
 ];
+
+const STATUS_LABELS: Record<LeadStatus, string> = {
+  new: "Yeni",
+  contacted: "İletişime Geçildi",
+  interested: "İlgileniyor",
+  meeting: "Görüşme",
+  won: "Kazanıldı",
+  lost: "Kaybedildi",
+};
 
 export function FilterBar({ filters, onChange, industries, districts }: FilterBarProps) {
   function set<K extends keyof LeadFilters>(key: K, value: LeadFilters[K]) {
@@ -25,7 +34,7 @@ export function FilterBar({ filters, onChange, industries, districts }: FilterBa
   return (
     <div className="card flex flex-wrap items-end gap-4">
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">Min Ignis score</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">Min Ignis Puanı</span>
         <input
           type="number"
           min={0}
@@ -38,13 +47,13 @@ export function FilterBar({ filters, onChange, industries, districts }: FilterBa
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">Industry</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">Sektör</span>
         <select
           value={filters.industry ?? ""}
           onChange={(e) => set("industry", e.target.value || undefined)}
           className="input w-48"
         >
-          <option value="">All industries</option>
+          <option value="">Tüm sektörler</option>
           {industries.map((i) => (
             <option key={i} value={i}>
               {i}
@@ -54,13 +63,13 @@ export function FilterBar({ filters, onChange, industries, districts }: FilterBa
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">District</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">İlçe</span>
         <select
           value={filters.district ?? ""}
           onChange={(e) => set("district", e.target.value || undefined)}
           className="input w-40"
         >
-          <option value="">All districts</option>
+          <option value="">Tüm ilçeler</option>
           {districts.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -70,16 +79,16 @@ export function FilterBar({ filters, onChange, industries, districts }: FilterBa
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-500">Status</span>
+        <span className="mb-1 block text-xs font-medium text-stone-500">Durum</span>
         <select
           value={filters.status ?? ""}
           onChange={(e) => set("status", (e.target.value || undefined) as LeadFilters["status"])}
           className="input w-36"
         >
-          <option value="">Any status</option>
-          {["new", "contacted", "interested", "meeting", "won", "lost"].map((s) => (
+          <option value="">Herhangi bir durum</option>
+          {(Object.keys(STATUS_LABELS) as LeadStatus[]).map((s) => (
             <option key={s} value={s}>
-              {s[0].toUpperCase() + s.slice(1)}
+              {STATUS_LABELS[s]}
             </option>
           ))}
         </select>
@@ -111,7 +120,7 @@ export function FilterBar({ filters, onChange, industries, districts }: FilterBa
           onClick={() => onChange({ searchId: filters.searchId })}
           className="text-xs font-medium text-stone-500 underline hover:text-stone-700"
         >
-          Clear filters
+          Filtreleri temizle
         </button>
       )}
     </div>
