@@ -54,9 +54,17 @@ export const SIGNAL_DEFINITIONS: SignalDefinition[] = [
       "bayi ağı",
       "bayilik ağı",
       "bayilerimiz",
-      "yetkili bayi",
       "bayi listesi",
     ],
+    // Removed "yetkili bayi" (real example: Kayaşehir Pimapen KENT CAM
+    // scored on this phrase, but a phone conversation revealed they are a
+    // retail storefront where customers walk in — no remote/multi-channel
+    // order intake at all). "Yetkili bayi" ("authorized dealer") is almost
+    // always the SITE OWNER describing itself as a reseller of someone
+    // else's brand ("X markasının yetkili bayisiyiz") — the opposite of
+    // "this company has its own dealer network." Left out rather than
+    // fixed with a negative signal, since a false negative here just means
+    // a missed lead, while the false positive sent us to the wrong company.
     description: "Site mevcut bir bayi ağına referans veriyor.",
   },
   {
