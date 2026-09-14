@@ -1,91 +1,149 @@
-# Ignis Lead Finder
+# 🔥 Ignis Lead Finder
 
-Internal tool that answers one question: **which company should I contact first for Ignis, and what evidence makes it worth contacting?**
+**"Which company should I contact first, and what evidence makes it worth contacting?"**
 
-It discovers real businesses in a location/industry, does a lightweight scan of their public website, extracts Ignis-relevant signals (B2B, dealer network, custom/technical orders, WhatsApp/ERP, etc.), computes a deterministic **Ignis Fit Score (0–100)**, and ranks leads so you know who to research first — with every signal traceable back to VERIFIED / INFERRED / UNKNOWN evidence, never invented.
+An internal B2B lead-discovery tool built for Ignis (see below) — it finds real businesses in a location/industry via Google Places, reads their public website like a human researcher would, and ranks them by how well they match an ideal customer profile. No fake data, no invented facts, no black-box score: every claim on screen traces back to a specific sentence on a specific page, or is explicitly labeled unknown.
 
-## Real data only — no silent fallback
+<p align="center">
+  <img src="docs/screenshots/02-results.png" alt="Ranked results — Ignis İçin Öncelikli Firmalar" width="850">
+</p>
 
-**Normal use requires real credentials.** There is no "works out of the box with fake data" mode. If `GOOGLE_MAPS_API_KEY` isn't set, the app does not invent businesses — the Search button is disabled and shows exactly why. If `GROQ_API_KEY` isn't set, the "Generate" buttons on a lead's detail page are disabled the same way. Nothing ever silently substitutes mock businesses, fake ratings/reviews, or template AI text for the real thing — every failure is a visible, actionable error.
+---
 
-The header always shows the true state: **🟢 REAL DATA MODE** / **🔴 REAL DATA UNAVAILABLE** for business discovery, **✓ AI ENABLED** / **✗ AI UNAVAILABLE** for AI generation. The search page also has a small **System Status** panel with the same two checks.
+## 🧩 What is Ignis?
 
-## Quick start
+Ignis is an early-stage startup idea: helping B2B manufacturers, distributors, and dealer networks catch missing or conflicting information in incoming orders before it becomes a costly mistake — and eventually, moving validated orders straight into their existing operational systems.
+
+Ignis is still in the **customer-discovery stage** — before writing a line of the actual product, the question is *who has this problem badly enough to talk about it?* That's what this tool answers. It is not Ignis; it's the internal instrument used to find the first 10 conversations worth having.
+
+## 🎯 Why this exists
+
+Manually searching Google Maps for "aluminum manufacturers in Beylikdüzü," opening 30 tabs, and guessing which ones look like a real B2B operation doesn't scale and isn't repeatable. This tool automates the *research*, not the *judgment*:
+
+1. **Discover** real businesses for a location + industry via the Google Places API.
+2. **Read** each one's actual website — homepage plus a couple of relevant pages (dealer/about/contact) — the way a human would skim it.
+3. **Extract evidence**, not guesses: does the site *say* it has a dealer network, custom production, WhatsApp ordering, an ERP? Every hit keeps its source URL and the exact sentence it came from.
+4. **Score deterministically** — a transparent, auditable rules table turns evidence into a 0–100 fit score. No LLM anywhere near the math.
+5. **Rank relatively** — the real question isn't "is this company above 80?", it's "which of the companies I just found are the strongest candidates?" A search where the best score is 24/100 still surfaces a clear #1 pick instead of reporting that everything is bad.
+6. **Explain with AI, grounded in step 3** — an LLM (Groq) compares the top candidates and writes a one-sentence reason per lead, explicitly forbidden from inventing a score or a fact that isn't in the evidence.
+
+## 📸 Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**Search**
+Country/city/district/industry — plus one-click presets for the three neighborhoods this was built to cover first.
+
+<img src="docs/screenshots/01-search.png" alt="Search page">
+
+</td>
+<td width="50%">
+
+**Ranked results**
+Top candidates lead with a rank, a relative strength label, the AI's one-line reason, and a quick evidence checklist — everything else is a secondary table below.
+
+<img src="docs/screenshots/02-results.png" alt="Ranked priority leads">
+
+</td>
+</tr>
+</table>
+
+**Lead detail — full evidence trail**
+
+Every category of the score, every signal (verified / inferred / unknown, with its source sentence), the live website scan, and on-demand AI generation (explanation, discovery questions, outreach message) for this specific lead.
+
+<p align="center">
+  <img src="docs/screenshots/03-detail.png" alt="Lead detail page with score breakdown and evidence table" width="850">
+</p>
+
+## ⚙️ How it works
+
+```
+Google Places  →  Real businesses  →  Website scan  →  Evidence (verified/inferred/unknown)
+                                                              ↓
+                                          Deterministic Ignis Fit Score (0–100)
+                                                              ↓
+                                      Top candidates → Groq AI ranking + rationale
+                                                              ↓
+                                                  Ranked leads, ready to contact
+```
+
+**The score never comes from an LLM.** `scoringEngine.ts` is a plain rules table: five weighted categories (B2B fit, order complexity, operational complexity, channel complexity, automation opportunity) that sum specific evidence points to exactly 100. Groq only enters the picture *after* the score exists — to compare already-scored candidates and explain the ranking in a sentence, never to invent a number.
+
+**Nothing is faked when a credential is missing.** There's no "demo mode" that silently swaps in mock businesses or a template AI reply. If `GOOGLE_MAPS_API_KEY` isn't set, the search button is disabled with an explicit reason. If `GROQ_API_KEY` isn't set, the "Generate" buttons are disabled the same way — the rest of the page (real data, real score, real evidence) still works fine.
+
+## 🛠 Tech stack
+
+| | |
+|---|---|
+| **Framework** | Next.js 15 (App Router, Route Handlers) + TypeScript |
+| **UI** | React 19, Tailwind CSS |
+| **Database** | SQLite via Node's built-in `node:sqlite` — zero native compilation |
+| **Business data** | Google Places API (New) — Text Search |
+| **AI** | Groq (`openai/gpt-oss-120b`) — ranking rationale, lead summaries, discovery questions, outreach drafts |
+| **Website analysis** | `cheerio` — lightweight, bounded (homepage + ≤2 relevant sub-pages) |
+
+## 🚀 Getting started
 
 ```bash
 npm install
 cp .env.example .env.local
-# edit .env.local: add GOOGLE_MAPS_API_KEY and GROQ_API_KEY
+# edit .env.local — see table below
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open **http://localhost:3000**.
 
 | Variable | Required for | Where to get it |
 |---|---|---|
-| `GOOGLE_MAPS_API_KEY` | Business discovery (Google Places API, New) | Google Cloud Console → enable "Places API (New)" → create an API key |
-| `GROQ_API_KEY` | AI lead summary / discovery questions / outreach message | console.groq.com |
-| `GROQ_MODEL` (optional) | — | Defaults to `openai/gpt-oss-120b` (production, reasoning-capable, general-purpose) |
-| `APP_ACCESS_TOKEN` (optional) | Basic API protection beyond localhost | Any secret string you choose; required as an `x-ignis-token` header on mutating routes when set |
+| `GOOGLE_MAPS_API_KEY` | Business discovery (Places API, New) | Google Cloud Console → enable *Places API (New)* → create a key |
+| `GROQ_API_KEY` | AI ranking rationale, lead summary, discovery questions, outreach draft | [console.groq.com](https://console.groq.com) |
+| `GROQ_MODEL` *(optional)* | — | Defaults to `openai/gpt-oss-120b` |
+| `APP_ACCESS_TOKEN` *(optional)* | Basic API protection beyond localhost | Any secret string; required as an `x-ignis-token` header when set |
 
-Nothing here is ever sent to the browser — all provider calls happen server-side (Next.js Route Handlers). Restart `npm run dev` after editing `.env.local`.
+All provider calls happen server-side — nothing above ever reaches the browser. Restart the dev server after editing `.env.local`.
 
-### One real test search
+**No API keys yet?** The app still runs and tells you exactly what's missing (a "System Status" panel on the search page, plus header badges) instead of pretending to work. Set `BUSINESS_PROVIDER=mock` for an explicit, clearly-labeled offline mode with sample data — useful for UI work, never the default.
+
+**Try it for real** with one of the three searches this was built and tested against:
 
 ```text
-Country:  Turkey
-City:     Istanbul
-District: Beylikdüzü
-Category: Aluminum Manufacturer
-Max:      10
+Turkey → Istanbul → Beylikdüzü → Aluminum / PVC / Glass
+Turkey → Istanbul → İkitelli   → Industrial Distributor
+Turkey → Istanbul → Esenyurt   → Metal Manufacturer
 ```
 
-With `GOOGLE_MAPS_API_KEY` set, this returns actual aluminum manufacturers in Beylikdüzü — check a couple of names/addresses against Google Maps yourself to confirm. Fields Google doesn't provide (no website, no rating) show **"Unknown / Not available"**, never a generated placeholder.
-
-### Developer/test mode (mock data)
-
-For UI development without burning API calls, set `BUSINESS_PROVIDER=mock` in `.env.local`. This is an explicit, isolated opt-in — never the default, never silent. The header switches to **🧪 MOCK DATA MODE**, and every mock business is clearly a sample (fake ratings included) meant only for exercising the discovery → scan → score → rank pipeline offline. AI generation still requires a real `GROQ_API_KEY` even in mock mode — there is no fake-AI mode for text generation, ever.
-
-## How scoring works
-
-`src/lib/scoringEngine.ts` is a plain, auditable rules table — **no LLM involved** in the score itself. Each of the 5 weighted categories (B2B fit, order complexity, operational complexity, channel complexity, automation opportunity) sums points for specific VERIFIED/INFERRED signals, capped at its max, summing to exactly 100. AI (Groq) is only used afterward, to turn the already-computed evidence into a short grounded explanation, discovery questions, and an outreach message — and only when `GROQ_API_KEY` is set; the system prompt (`src/lib/aiClient.ts`) explicitly forbids inventing facts, people, or company characteristics, assuming a WhatsApp icon means WhatsApp orders, or claiming manual research was done.
-
-Every signal in `src/lib/signalDefinitions.ts` is either:
-- **VERIFIED** — an exact phrase (English + Turkish) found on a scanned page, with the source URL and a quoted snippet
-- **INFERRED** — a conclusion derived from a combination of VERIFIED signals (clearly labeled as such)
-- **UNKNOWN** — not found; never silently treated as "no"
-
-## Architecture
+## 🏗 Architecture
 
 ```
 src/
   lib/
-    config.ts                      isGoogleConfigured / isGroqConfigured — single source of truth for real-vs-blocked state
-    errors.ts                      NotConfiguredError + shared 503-vs-502 route error mapping
-    providers/businessDiscovery/   BusinessDiscoveryProvider interface + mock & Google Places implementations
-    websiteAnalyzer.ts             Fetches homepage + a couple of relevant sub-pages (dealer/about/contact), bounded & timeboxed
-    signalExtractor.ts             Raw text -> evidence log (SignalEvidence[])
-    scoringEngine.ts               Evidence -> deterministic Ignis Fit Score
-    aiClient.ts                    Sole entry point into Groq — callAiModel(); only file that imports groq-sdk
-    aiLeadAnalyzer.ts               "Why this lead" + discovery questions (grounded LLM calls — throws if not configured)
-    outreachGenerator.ts           Personalized outreach message (same grounding rules)
-    leadRepository.ts              SQLite (node:sqlite) persistence + filtering
-    searchPipeline.ts              Orchestrates discovery -> upsert -> analysis, with cost-control (new leads only)
+    config.ts                     Single source of truth for "is a real provider actually usable right now"
+    providers/businessDiscovery/  Provider interface + Google Places & mock implementations
+    websiteAnalyzer.ts            Fetches homepage + relevant sub-pages, bounded & time-boxed
+    signalDefinitions.ts          The canonical evidence dictionary (phrases + proximity fallbacks)
+    signalExtractor.ts            Raw page text -> evidence log (verified / inferred / unknown)
+    scoringEngine.ts              Evidence -> deterministic Ignis Fit Score (no LLM)
+    relativeRanking.ts            Score -> relative candidate strength within THIS search's results
+    aiClient.ts                   Sole entry point into Groq -- every other module calls through this one file
+    aiRankingService.ts           Second-stage: compares top candidates, ranks + explains (never re-scores)
+    aiLeadAnalyzer.ts             Grounded lead summary + discovery questions
+    outreachGenerator.ts          Grounded personalized outreach draft
+    leadRepository.ts             SQLite persistence, filtering, ranking cache
+    searchPipeline.ts             Orchestrates discover -> upsert -> analyze, skipping re-analysis of known leads
   app/
-    page.tsx                       Search + System Status diagnostics panel
-    leads/page.tsx                 Ranked results + filters + CSV export
-    leads/[id]/page.tsx            Evidence, score breakdown, AI sections, status/notes
-    api/                           Route handlers backing all of the above (search/AI routes return 503 when not configured)
+    page.tsx                      Search + System Status
+    leads/page.tsx                Priority cards + secondary table + filters + CSV export
+    leads/[id]/page.tsx           Full evidence trail + on-demand AI generation
+    api/                          Route handlers (503 when a provider isn't configured, never a fake fallback)
 ```
 
-No ORM, no queue, no auth system beyond an optional shared-secret header — this is a small internal tool, kept that way on purpose.
+## 🧭 Design principles
 
-## Storage
-
-SQLite via Node's built-in `node:sqlite` (no native compilation required — this avoided a real dependency-install failure with `better-sqlite3` on this machine, which needs a C++ toolchain Windows doesn't ship by default). The database file lives at `data/ignis.sqlite` (configurable via `DATABASE_PATH`) and is git-ignored.
-
-Re-running a search that rediscovers an already-known lead only refreshes its raw discovery fields (name/address/phone/rating) — it does **not** re-scan the website or re-score, to avoid burning API calls on data you already have. Use the **Rescan** button on a lead's detail page to force a fresh analysis.
-
-## What's intentionally not here
-
-Per the project brief: no automated sending (email/WhatsApp/LinkedIn), no CRM integration, no billing/multi-tenant/teams, no heavy crawling. Lead management is just a status enum (New/Contacted/Interested/Meeting/Won/Lost) + a free-text note — enough to track who you've reached out to, not a CRM.
+- **Evidence over inference.** Every signal is `VERIFIED` (found on a page, source + snippet kept), `INFERRED` (derived from other verified signals, labeled as such), or `UNKNOWN` — never silently assumed to be "no."
+- **Ranking over absolute scoring.** The point isn't "is this lead good in the abstract," it's "who do I call first out of the ones I just found."
+- **Deterministic where it counts, AI where it adds judgment.** Scoring math is a plain rules table you can audit line by line. AI only interprets and explains evidence that already exists.
+- **Fail loud, never fake.** A missing API key disables the relevant button with a reason — it never triggers a silent fallback to sample data.
+- **Small on purpose.** No CRM, no automated outreach sending, no multi-tenant SaaS scaffolding. This is a research instrument for one person's customer-discovery process, kept exactly that size.
