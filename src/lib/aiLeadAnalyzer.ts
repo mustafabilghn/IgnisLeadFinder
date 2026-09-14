@@ -33,7 +33,7 @@ currently receive, check, and process customer/dealer orders — not selling any
 probe the specific unknowns listed in the evidence (e.g. ERP usage, manual order entry) rather than generic
 ones. Reply with ONLY the 3 questions, one per line, numbered "1.", "2.", "3." — no other text.`;
 
-  const result = await callAiModel(prompt, 300);
+  const result = await callAiModel(prompt, 400);
   const questions = parseNumberedList(result);
   if (questions.length === 0) {
     throw new Error("Groq returned a response that couldn't be parsed into discovery questions.");

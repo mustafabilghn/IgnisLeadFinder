@@ -96,6 +96,12 @@ export async function callAiModel(
   const response = await client.chat.completions.create({
     model: AI_MODEL,
     max_tokens: maxTokens,
+    // gpt-oss-120b is a reasoning model — its internal reasoning tokens count
+    // against max_tokens, so a verbose reasoning pass can exhaust the budget
+    // and leave `content` empty for these short, non-analytical writing
+    // tasks (reproduced: outreach generation returned nothing at max_tokens
+    // 300). None of our prompts need deep reasoning, so keep it minimal.
+    reasoning_effort: "low",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

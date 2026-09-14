@@ -21,5 +21,5 @@ company currently receives, checks, and processes customer/dealer orders. Requir
 - End with a soft ask for a few minutes of their time.
 Reply with ONLY the message text.`;
 
-  return callAiModel(prompt, 300);
+  return callAiModel(prompt, 400);
 }
